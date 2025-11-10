@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* TAREA 1: Añadir utilidad personalizada para ocultar la barra de scroll
+*/
+.no-scrollbar {
+  /* Para Firefox */
+  scrollbar-width: none;
+  /* Para IE y Edge (versiones antiguas) */
+  -ms-overflow-style: none;
+}
+
+/* Para Chrome, Safari y Opera (WebKit) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
