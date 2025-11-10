@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ref, set, push, serverTimestamp } from 'firebase/database';
-import { Megaphone, X } from 'lucide-react';
+import { Megaphone, X, Users, Plus, Trash2 } from 'lucide-react'; // Iconos añadidos
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import SelectField from '../ui/SelectField.jsx';
@@ -11,6 +11,12 @@ import {
     PRESS_LOG_ACTIVITY_OPTIONS,
     PRESS_LOG_FORMAT_OPTIONS,
     PRESS_LOG_REACH_OPTIONS,
+    // Importar constantes de Media Stakeholder
+    INITIAL_MEDIA_STAKEHOLDER_STATE,
+    MEDIA_STAKEHOLDER_TYPE_OPTIONS,
+    MEDIA_STAKEHOLDER_AMBITO_OPTIONS,
+    MEDIA_STAKEHOLDER_ROLE_OPTIONS,
+    MEDIA_STAKEHOLDER_POSITION_OPTIONS
 } from '../../utils/constants.js'; 
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
@@ -34,10 +40,19 @@ const CheckboxField = ({ label, name, checked, onChange }) => {
 
 const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose }) => {
     const { t } = useTranslation();
-    const [formData, setFormData] = useState(initialData || INITIAL_PRESS_LOG_STATE);
+    
+    // Asegurar que los arrays existan en los datos iniciales
+    const initialFormData = initialData ? 
+        { ...initialData, format: initialData.format || [], mediaStakeholders: initialData.mediaStakeholders || [] } : 
+        INITIAL_PRESS_LOG_STATE;
+        
+    const [formData, setFormData] = useState(initialFormData);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
+
+    // Nuevo estado for media stakeholders
+    const [newStakeholder, setNewStakeholder] = useState(INITIAL_MEDIA_STAKEHOLDER_STATE);
 
     const isReady = !!db && !!userId;
     const formTitle = mode === 'edit' 
@@ -64,6 +79,34 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
         });
     };
 
+    // --- Handlers de Media Stakeholder (NUEVO) ---
+    const handleStakeholderChange = (e) => {
+        const { name, value } = e.target;
+        setNewStakeholder(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const addStakeholder = (e) => {
+        e.preventDefault();
+        if (!newStakeholder.name.trim()) {
+            setMessage(t('policy.form.stakeholder_error'));
+            setMessageType('error');
+            return;
+        }
+        
+        const stakeholderToAdd = {
+            id: Date.now(), 
+            ...newStakeholder,
+        };
+        setFormData(prev => ({ ...prev, mediaStakeholders: [...prev.mediaStakeholders, stakeholderToAdd] }));
+        setNewStakeholder(INITIAL_MEDIA_STAKEHOLDER_STATE);
+        setMessage('');
+    };
+    
+    const removeStakeholder = (id) => {
+        setFormData(prev => ({ ...prev, mediaStakeholders: prev.mediaStakeholders.filter(s => s.id !== id) }));
+    };
+
+    // --- Submit Actualizado ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!isReady) return; 
@@ -75,10 +118,16 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
         try {
             const path = getDbPaths().pressLog;
             
+            // Limpiar IDs temporales
+            const cleanData = {
+                ...formData,
+                mediaStakeholders: (formData.mediaStakeholders || []).map(({ id, ...rest }) => rest),
+            };
+
             if (mode === 'edit' && initialData?.id) {
                 const itemRef = ref(db, `${path}/${initialData.id}`);
                 await set(itemRef, {
-                    ...formData,
+                    ...cleanData,
                     updatedAt: serverTimestamp(),
                     updatedBy: userId,
                 });
@@ -86,7 +135,7 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
             } else {
                 const newItemRef = push(ref(db, path));
                 await set(newItemRef, {
-                    ...formData,
+                    ...cleanData,
                     id: newItemRef.key,
                     createdAt: serverTimestamp(),
                     createdBy: userId,
@@ -190,6 +239,88 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
                     required={false}
                 />
 
+                {/* --- Media Stakeholder Entry Section (NUEVO) --- */}
+                <div className="border-t border-sky-800/50 pt-4 mt-4">
+                    <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                        <Users className="w-5 h-5 mr-2 text-sky-400" />
+                        {t('media_stakeholder.form_title')} ({formData.mediaStakeholders.length})
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-end bg-sky-950/30 border border-sky-800/50 p-4 rounded-lg">
+                         <InputField 
+                            label={t('policy.form.stakeholder_name')} 
+                            name="name" 
+                            value={newStakeholder.name} 
+                            onChange={handleStakeholderChange} 
+                            required={false} 
+                        />
+                        <SelectField 
+                            label={t('policy.form.stakeholder_type')} 
+                            name="type" 
+                            options={Object.values(MEDIA_STAKEHOLDER_TYPE_OPTIONS).map(opt => ({ value: opt, label: t(`stakeholder.category.${opt.replace(/ /g, '_')}`) }))}
+                            value={newStakeholder.type} 
+                            onChange={handleStakeholderChange} 
+                        />
+                         <SelectField 
+                            label={t('policy.form.stakeholder_scope')} 
+                            name="ambito" 
+                            options={Object.values(MEDIA_STAKEHOLDER_AMBITO_OPTIONS)} 
+                            value={newStakeholder.ambito} 
+                            onChange={handleStakeholderChange} 
+                        />
+                        <SelectField 
+                            label={t('policy.form.stakeholder_role')} 
+                            name="role" 
+                            options={MEDIA_STAKEHOLDER_ROLE_OPTIONS.map(opt => ({ value: opt, label: t(opt) }))} 
+                            value={newStakeholder.role} 
+                            onChange={handleStakeholderChange} 
+                        />
+                        <SelectField 
+                            label={t('policy.form.stakeholder_position')} 
+                            name="position" 
+                            options={MEDIA_STAKEHOLDER_POSITION_OPTIONS.map(opt => ({ value: opt, label: t(opt) }))} 
+                            value={newStakeholder.position} 
+                            onChange={handleStakeholderChange} 
+                        />
+                        <button
+                            type="button"
+                            onClick={addStakeholder}
+                            className="w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition duration-300 shadow-md h-10"
+                            title="Add Media Stakeholder"
+                        >
+                            <Plus className="w-4 h-4 mr-1" /> {t('policy.form.stakeholder_add')}
+                        </button>
+                    </div>
+
+                    <div className="max-h-40 overflow-y-auto border border-sky-800/50 rounded-lg p-2 bg-black/30">
+                        {formData.mediaStakeholders.length === 0 ? (
+                            <p className="text-center text-sm text-gray-500">{t('policy.form.stakeholder_empty')}</p>
+                        ) : (
+                            <ul className="space-y-1">
+                                {formData.mediaStakeholders.map((s, index) => (
+                                    <li key={s.id} className="flex justify-between items-start bg-sky-950/50 p-2 rounded-md hover:bg-sky-900/60">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-white">{index + 1}. {s.name}</p>
+                                            <p className="text-xs text-gray-400 capitalize">
+                                                {t(s.role)} | {t(s.position)} | {s.ambito} | {t(`stakeholder.category.${s.type.replace(/ /g, '_')}`)}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeStakeholder(s.id)}
+                                            className="text-red-400 hover:text-red-300 p-1 ml-2"
+                                            title="Remove Stakeholder"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+
+                {/* --- Botón de Submit --- */}
                 <button
                     type="submit"
                     disabled={isLoading || !isReady}

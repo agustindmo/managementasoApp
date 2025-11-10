@@ -21,11 +21,12 @@ import CommunicationsDashboard from './components/dashboards/CommunicationsDashb
 import UserProfile from './components/dashboards/UserProfile.jsx';
 import AdminProfileDashboard from './components/dashboards/AdminProfileDashboard.jsx';
 import PressLogDashboard from './components/dashboards/PressLogDashboard.jsx';
-// TAREA 10 & 11: Importar nuevos dashboards
 import NewMemberDashboard from './components/dashboards/NewMemberDashboard.jsx';
 import MemberApprovalDashboard from './components/dashboards/MemberApprovalDashboard.jsx';
 import FinanceDashboard from './components/dashboards/FinanceDashboard.jsx';
-
+import FinanceRelationsDashboard from './components/dashboards/FinanceRelationsDashboard.jsx';
+// TAREA 8: Importar nuevo dashboard
+import MediaStakeholderMapDashboard from './components/dashboards/MediaStakeholderDashboard.jsx';
 
 // Placeholder views 
 const SectorDashboard = () => <div className="ml-64 p-8 text-center text-gray-600">Sector e Institución View (Placeholder)</div>;
@@ -101,7 +102,7 @@ function AppContent() {
                     const assignedRole = snapshot.val() || 'pending'; 
                     setRole(assignedRole);
                     if (assignedRole === 'admin') setActiveView('user_admin'); 
-                    else if (assignedRole === 'director') setActiveView('member_approvals'); // TAREA 10: Director aterriza en aprobaciones
+                    else if (assignedRole === 'director') setActiveView('member_approvals');
                     else if (assignedRole === 'user') setActiveView('resumen'); 
                     else setRole('pending');
                 });
@@ -119,8 +120,8 @@ function AppContent() {
 
     // Effect to handle navigation when role changes
     useEffect(() => {
-        // TAREA 10 & 11: Actualizadas listas de vistas
-        const adminViews = ['user_admin', 'admin_profiles', 'user_profile', 'new_member_request', 'finance_dashboard', 'policy_data', 'activity_log', 'communications_log', 'press_log', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view'];
+        // TAREA 8: Añadir 'media_stakeholder_map' a adminViews
+        const adminViews = ['user_admin', 'admin_profiles', 'user_profile', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', 'media_stakeholder_map', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view'];
         const directorViews = ['user_profile', 'member_approvals', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view'];
         const userViews = ['user_profile', 'resumen', 'logros'];
         
@@ -128,7 +129,7 @@ function AppContent() {
             setActiveView('user_admin'); 
         } 
         else if (role === 'director' && !directorViews.includes(activeView)) {
-            setActiveView('member_approvals'); // TAREA 10: Director aterriza en aprobaciones
+            setActiveView('member_approvals');
         } 
         else if (role === 'user' && !userViews.includes(activeView)) {
             setActiveView('resumen');
@@ -174,7 +175,6 @@ function AppContent() {
             );
         }
         
-        // TAREA 10 & 11: Añadidas nuevas rutas
         switch (activeView) {
             // Members
             case 'user_admin':
@@ -209,10 +209,15 @@ function AppContent() {
                 return <CommunicationsDashboard db={dbInstance} />;
             case 'press_log':
                 return <PressLogDashboard userId={userId} db={dbInstance} />;
-            
+            // TAREA 8: Añadir nueva ruta
+            case 'media_stakeholder_map':
+                return <MediaStakeholderMapDashboard db={dbInstance} />;
+
             // Finance
             case 'finance_dashboard':
                 return <FinanceDashboard userId={userId} db={dbInstance} />;
+            case 'finance_relations':
+                return <FinanceRelationsDashboard userId={userId} db={dbInstance} />;
 
             // Placeholders
             case 'sector':

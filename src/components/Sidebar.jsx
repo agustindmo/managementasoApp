@@ -15,10 +15,12 @@ import {
     User,
     List,
     Megaphone,
-    // TAREA 10 & 11: Nuevos iconos
-    UserPlus, // Para 'new_member_request'
-    UserCheck, // Para 'member_approvals'
-    DollarSign // Para 'finance_dashboard'
+    UserPlus,
+    UserCheck,
+    DollarSign,
+    Handshake,
+    // TAREA 8: Nuevo icono
+    Radio
 } from 'lucide-react'; 
 
 // Componente helper para los títulos de grupo
@@ -51,7 +53,6 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         { id: 'user_profile', labelKey: 'sidebar.user_profile', icon: User, requiredRole: ['admin', 'director', 'user'], group: 'members' },
         { id: 'user_admin', labelKey: 'sidebar.user_admin', icon: Settings, requiredRole: ['admin'], group: 'members' },
         { id: 'admin_profiles', labelKey: 'sidebar.admin_profiles', icon: List, requiredRole: ['admin'], group: 'members' },
-        // TAREA 10: Enlaces de Solicitud de Miembros
         { id: 'new_member_request', labelKey: 'sidebar.new_member_request', icon: UserPlus, requiredRole: ['admin'], group: 'members' },
         { id: 'member_approvals', labelKey: 'sidebar.member_approvals', icon: UserCheck, requiredRole: ['director'], group: 'members' },
 
@@ -67,14 +68,16 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         // Group: Communications
         { id: 'communications_log', labelKey: 'sidebar.communications_log', icon: MessageSquare, requiredRole: ['admin'], group: 'communications' }, 
         { id: 'press_log', labelKey: 'sidebar.press_log', icon: Megaphone, requiredRole: ['admin'], group: 'communications' },
+        // TAREA 8: Nuevo enlace de Media Stakeholder Map
+        { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin'], group: 'communications' },
 
-        // TAREA 11: Nuevo Grupo de Finanzas
+        // Group: Finance
         { id: 'finance_dashboard', labelKey: 'sidebar.finance_dashboard', icon: DollarSign, requiredRole: ['admin'], group: 'finance' },
+        { id: 'finance_relations', labelKey: 'sidebar.finance_relations', icon: Handshake, requiredRole: ['admin'], group: 'finance' },
     ];
 
     const visibleItems = ALL_VIEWS.filter(item => item.requiredRole.includes(role)); 
     
-    // TAREA 11: Añadido 'finance' a la lista de grupos
     const groups = {
         members: { title: t('sidebar.members'), items: visibleItems.filter(i => i.group === 'members') },
         public_affairs: { title: t('sidebar.public_affairs'), items: visibleItems.filter(i => i.group === 'public_affairs') },

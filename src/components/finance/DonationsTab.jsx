@@ -1,19 +1,14 @@
 // src/components/finance/DonationsTab.jsx
 
 import React from 'react';
-import { Gift } from 'lucide-react';
-import { useTranslation } from '../../context/TranslationContext.jsx';
-import CardTitle from '../ui/CardTitle.jsx';
+import FinanceDonationDashboard from '../dashboards/FinanceDonationDashboard.jsx';
 
-const DonationsTab = ({ db }) => {
-    const { t } = useTranslation();
+const DonationsTab = ({ db, userId }) => {
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-            <CardTitle title={t('finance.tab.donations')} icon={Gift} />
-            <div className="p-6 text-gray-400">
-                {t('finance.wip_desc')}
-            </div>
-        </div>
+        <FinanceDonationDashboard 
+            db={db}
+            userId={userId}
+        />
     );
 };
 export default DonationsTab;

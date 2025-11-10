@@ -1,3 +1,5 @@
+// src/services/firebase.js
+
 // This file now only handles path generation. 
 // It MUST NOT import or export db/auth/initializeApp to prevent conflicts with App.jsx,
 // which manages the database state centrally.
@@ -34,5 +36,12 @@ export const getDbPaths = () => {
         financeServices: `${adminBase}/financeServices`,
         financeProjects: `${adminBase}/financeProjects`,
         financeAudits: `${adminBase}/financeAudits`,
+
+        // TAREA 1: Nuevas rutas para Costos de Resumen
+        financeAdminCosts: `${adminBase}/financeAdminCosts`,
+        financeNonOpCosts: `${adminBase}/financeNonOpCosts`,
+
+        // TAREA 7 (Nueva): Ruta para Proveedores
+        financeProviders: `${adminBase}/financeProviders`,
     };
 };
