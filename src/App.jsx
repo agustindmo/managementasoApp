@@ -25,8 +25,17 @@ import NewMemberDashboard from './components/dashboards/NewMemberDashboard.jsx';
 import MemberApprovalDashboard from './components/dashboards/MemberApprovalDashboard.jsx';
 import FinanceDashboard from './components/dashboards/FinanceDashboard.jsx';
 import FinanceRelationsDashboard from './components/dashboards/FinanceRelationsDashboard.jsx';
-// TAREA 8: Importar nuevo dashboard
 import MediaStakeholderMapDashboard from './components/dashboards/MediaStakeholderDashboard.jsx';
+import EventDashboard from './components/dashboards/EventDashboard.jsx'; 
+import MemberDirectoryDashboard from './components/dashboards/MemberDirectoryDashboard.jsx';
+import BoardDirectoryDashboard from './components/dashboards/BoardDirectoryDashboard.jsx';
+import PublicAffairsDirectoryDashboard from './components/dashboards/PublicAffairsDirectoryDashboard.jsx';
+import MediaDirectoryDashboard from './components/dashboards/MediaDirectoryDashboard.jsx';
+import PartnersDirectoryDashboard from './components/dashboards/PartnersDirectoryDashboard.jsx';
+import CommissionDashboard from './components/dashboards/CommissionDashboard.jsx';
+// --- NUEVO: Imports Tarea 3 ---
+import GovernanceDashboard from './components/dashboards/GovernanceDashboard.jsx';
+
 
 // Placeholder views 
 const SectorDashboard = () => <div className="ml-64 p-8 text-center text-gray-600">Sector e Institución View (Placeholder)</div>;
@@ -35,6 +44,7 @@ const CondicionDashboard = () => <div className="ml-64 p-8 text-center text-gray
 
 
 // --- 1. CONFIGURATION FALLBACK ---
+// ... (código existente de config) ...
 const HARDCODED_FALLBACK_CONFIG = {
     apiKey: "AIzaSyBC8dNvx1YFTrwJN74wuYWL7AzZg18cLso", 
     authDomain: "policyapp-e5b9e.firebaseapp.com",
@@ -67,6 +77,7 @@ function AppContent() {
 
     // 1. Firebase Initialization and Auth Setup
     useEffect(() => {
+        // ... (código existente) ...
         let auth, db;
         const config = getFirebaseConfig(); 
         let unsubscribeAuth = () => {};
@@ -90,8 +101,6 @@ function AppContent() {
             setIsAppInitialized(true); 
             return;
         }
-
-        // --- PHASE 2: Authentication Listener and Role Lookup ---
         unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 setUserId(user.uid);
@@ -101,7 +110,6 @@ function AppContent() {
                 unsubscribeRole = onValue(roleRef, (snapshot) => {
                     const assignedRole = snapshot.val() || 'pending'; 
                     setRole(assignedRole);
-                    // --- MODIFICADO: 'directorinvitee' ahora va a 'resumen' por defecto ---
                     if (assignedRole === 'admin') setActiveView('user_admin'); 
                     else if (assignedRole === 'director') setActiveView('member_approvals');
                     else if (assignedRole === 'user' || assignedRole === 'userinvitee' || assignedRole === 'directorinvitee') setActiveView('resumen'); 
@@ -122,37 +130,37 @@ function AppContent() {
     // Effect to handle navigation when role changes
     useEffect(() => {
         
-        // --- MODIFICADO: Listas de vistas actualizadas ---
-        const userBaseViews = ['resumen', 'logros'];
-        // Vistas de Director (sin perfil)
-        const directorBaseViews = ['resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'media_stakeholder_map'];
+        // --- MODIFICADO: Añadido 'governance' ---
+        const userBaseViews = ['resumen', 'logros', 'events', 'member_directory', 'governance'];
+        const directorBaseViews = ['resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'media_stakeholder_map', 'events', 'member_directory', 'board_directory', 'public_affairs_directory', 'media_directory', 'partners_directory', 'commissions_directory', 'governance'];
 
         // Vistas completas
-        const adminViews = ['user_admin', 'admin_profiles', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', 'media_stakeholder_map', ...userBaseViews, 'objectivos', 'stakeholder_map', 'agenda_view'];
+        const adminViews = ['user_admin', 'admin_profiles', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', ...directorBaseViews];
         const directorViews = ['user_profile', 'member_approvals', ...directorBaseViews];
-        const directorInviteeViews = [...directorBaseViews]; // Sin 'user_profile' y sin 'member_approvals'
+        const directorInviteeViews = [...directorBaseViews]; 
         const userViews = ['user_profile', ...userBaseViews];
-        const userInviteeViews = [...userBaseViews]; // Sin 'user_profile'
+        const userInviteeViews = [...userBaseViews]; 
         
         if (role === 'admin' && !adminViews.includes(activeView)) {
             setActiveView('user_admin'); 
         } 
         else if (role === 'director' && !directorViews.includes(activeView)) {
-            setActiveView('member_approvals'); // Director default
+            setActiveView('member_approvals'); 
         }
         else if (role === 'directorinvitee' && !directorInviteeViews.includes(activeView)) {
-            setActiveView('resumen'); // Director Invitee default
+            setActiveView('resumen'); 
         }
         else if (role === 'user' && !userViews.includes(activeView)) {
-            setActiveView('resumen'); // User default
+            setActiveView('resumen'); 
         }
         else if (role === 'userinvitee' && !userInviteeViews.includes(activeView)) {
-            setActiveView('resumen'); // User Invitee default
+            setActiveView('resumen'); 
         }
     }, [role, activeView]);
     
     // Function to handle logout
     const handleLogout = async () => {
+        // ... (código existente) ...
         if (authInstance) {
             try { await signOut(authInstance); } 
             catch (e) { console.error("Error signing out:", e); }
@@ -162,7 +170,8 @@ function AppContent() {
     // 2. Conditional Rendering/Routing
     const renderDashboardView = () => {
         if (!isReady) {
-            return (
+            // ... (código existente) ...
+             return (
                 <div className="flex justify-center items-center h-screen bg-sky-950/90 text-white">
                     <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
                     <p className="ml-3 text-sky-200">Initializing Firebase services...</p>
@@ -171,6 +180,7 @@ function AppContent() {
         }
 
         if (!!userId && (!role || role === 'pending')) {
+             // ... (código existente) ...
              return (
                 <div className="p-8 text-center bg-yellow-900/50 border border-yellow-700 rounded-xl m-8 min-h-screen text-yellow-100">
                     <h2 className="text-2xl font-bold text-yellow-300 mb-4">Access Pending Approval</h2>
@@ -218,15 +228,34 @@ function AppContent() {
                 return <StakeholderMapDashboard db={dbInstance} />;
             case 'agenda_view': 
                 return <AgendaDashboard db={dbInstance} />;
+            case 'events':
+                return <EventDashboard userId={userId} db={dbInstance} role={role} />;
 
             // Communications
             case 'communications_log':
                 return <CommunicationsDashboard db={dbInstance} />;
             case 'press_log':
                 return <PressLogDashboard userId={userId} db={dbInstance} />;
-            
             case 'media_stakeholder_map':
                 return <MediaStakeholderMapDashboard db={dbInstance} role={role} userId={userId} />;
+
+            // Database
+            case 'member_directory':
+                return <MemberDirectoryDashboard db={dbInstance} role={role} />;
+            case 'board_directory':
+                return <BoardDirectoryDashboard db={dbInstance} role={role} />;
+            case 'public_affairs_directory':
+                return <PublicAffairsDirectoryDashboard db={dbInstance} userId={userId} role={role} />;
+            case 'media_directory':
+                return <MediaDirectoryDashboard db={dbInstance} />;
+            case 'partners_directory':
+                return <PartnersDirectoryDashboard db={dbInstance} />;
+            case 'commissions_directory': 
+                return <CommissionDashboard db={dbInstance} userId={userId} role={role} />;
+
+            // --- NUEVO: Governance ---
+            case 'governance':
+                return <GovernanceDashboard db={dbInstance} userId={userId} role={role} />;
 
             // Finance
             case 'finance_dashboard':
@@ -247,6 +276,7 @@ function AppContent() {
     };
 
     const renderContent = () => {
+        // ... (código existente) ...
         const isUserAuthenticated = !!authInstance?.currentUser;
 
         if (!isUserAuthenticated && isReady) {
@@ -262,8 +292,7 @@ function AppContent() {
             );
         }
         
-        // --- MODIFICADO: Añadidos nuevos roles al check ---
-        const showSidebar = role === 'admin' || role === 'director' || role === 'user' || role === 'directorinvitee' || role === 'userinvitee';
+        const showSidebar = role === 'admin' || role === 'director' || role === 'user' || role ==='directorinvitee' || role === 'userinvitee';
         const contentPadding = showSidebar ? 'pl-64' : 'px-4'; 
 
         return (
@@ -285,6 +314,7 @@ function AppContent() {
 
     return (
         <div className="font-sans min-h-screen bg-gradient-to-br from-sky-950 via-black to-black text-gray-200">
+            {/* ... (código existente de botones) ... */}
             <button
                 onClick={toggleLanguage}
                 className={`fixed top-4 ${authInstance?.currentUser ? 'right-40' : 'right-4'} z-50 p-2 bg-black/50 border border-sky-700/50 text-white rounded-full shadow-lg hover:bg-sky-800 transition duration-300 flex items-center text-sm backdrop-blur-md`}

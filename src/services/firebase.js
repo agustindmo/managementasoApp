@@ -26,6 +26,8 @@ export const getDbPaths = () => {
         userProfiles: `${adminBase}/userProfiles`,
         pressLog: `${adminBase}/pressLog`,
         mediaStakeholders: `${adminBase}/mediaStakeholders`,
+        publicStakeholders: `${adminBase}/publicStakeholders`,
+        commissions: `${adminBase}/commissions`,
 
         // TAREA 10: Nueva ruta para Solicitudes de Miembros
         memberRequests: `${adminBase}/memberRequests`,
@@ -45,7 +47,14 @@ export const getDbPaths = () => {
         // TAREA 7 (Nueva): Ruta para Proveedores
         financeProviders: `${adminBase}/financeProviders`,
 
-        // --- NUEVA RUTA ---
+        // Socios Estratégicos
         financePartners: `${adminBase}/financePartners`,
+        
+        // Eventos
+        events: `${adminBase}/events`,
+
+        // --- NUEVO: Tarea 3 (Gobernanza) ---
+        governanceMeetings: `${adminBase}/governanceMeetings`,
+        legalDocuments: `${adminBase}/legalDocuments`,
     };
 };

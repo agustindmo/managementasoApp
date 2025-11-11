@@ -46,7 +46,6 @@ export const INITIAL_MILESTONE_STATE = {
 export const ACTIVITY_TYPE_OPTIONS = ["letter", "meeting"];
 export const MEETING_MODE_OPTIONS = ["in person", "virtual", "hybrid"];
 
-// --- MODIFICADO ---
 export const INITIAL_ACTIVITY_STATE = {
     activityType: ACTIVITY_TYPE_OPTIONS[0], 
     meetingMode: MEETING_MODE_OPTIONS[0], 
@@ -208,24 +207,21 @@ export const PRESS_LOG_FORMAT_OPTIONS = [
 export const PRESS_LOG_REACH_OPTIONS = [
     "National", "International"
 ];
-// --- NUEVAS CONSTANTES ---
 export const IMPACT_OPTIONS = ["Positive", "Neutral", "Negative"];
 
-// --- ESTADO INICIAL ACTUALIZADO ---
 export const INITIAL_PRESS_LOG_STATE = {
     date: new Date().toISOString().slice(0, 10),
-    agendaItems: [], // Nuevo
-    otherAgendaItem: '', // Nuevo
-    mediaEntries: [], // Nuevo (reemplaza mediaName y format)
-    impact: IMPACT_OPTIONS[1], // Nuevo
+    agendaItems: [], 
+    otherAgendaItem: '', 
+    mediaEntries: [], 
+    impact: IMPACT_OPTIONS[1], 
     reach: PRESS_LOG_REACH_OPTIONS[0],
     audience: '',
     freePress: '',
     link: '',
-    mediaStakeholderKeys: [], // Nuevo (reemplaza mediaStakeholders object)
+    mediaStakeholderKeys: [], 
 };
 
-// --- COLUMNAS DE TABLA ACTUALIZADAS ---
 export const PRESS_LOG_TABLE_COLUMNS = [
     { labelKey: "press_log.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
     { labelKey: "press_log.col.agenda_items", key: "agendaItems", sortable: false, filterable: true, type: 'array' },
@@ -237,21 +233,15 @@ export const PRESS_LOG_TABLE_COLUMNS = [
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
 
-// --- MAPA DE FILTROS ACTUALIZADO ---
 export const PRESS_LOG_COLUMN_OPTIONS_MAP = {
     impact: IMPACT_OPTIONS,
     reach: PRESS_LOG_REACH_OPTIONS,
-    // format y activity ya no son columnas principales
 };
 
 
 // --- Constantes de Media Stakeholder (ACTUALIZADAS) ---
-// Usar PRESS_LOG_FORMAT_OPTIONS para 'type'
 export const MEDIA_STAKEHOLDER_CATEGORY_OPTIONS = PRESS_LOG_FORMAT_OPTIONS;
-
-// --- NUEVO: Opciones de Alcance (Scope) ---
 export const MEDIA_SCOPE_OPTIONS = ["National", "International", "Local", "Province"];
-// Usar STAKEHOLDER_POSITION_OPTIONS (In Favor, Against, Neutral)
 
 export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
     name: '',
@@ -260,7 +250,6 @@ export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
     position: STAKEHOLDER_POSITION_OPTIONS[2], // Default a 'Neutral'
 };
 
-// Columnas para la tabla de Media Stakeholder (ACTUALIZADO)
 export const MEDIA_STAKEHOLDER_TABLE_COLUMNS = [
     { labelKey: "stakeholder.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
     { labelKey: "stakeholder.col.type", key: "type", sortable: true, filterable: true, optionsKey: 'type' }, 
@@ -271,7 +260,7 @@ export const MEDIA_STAKEHOLDER_TABLE_COLUMNS = [
 
 export const MEDIA_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
     type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS,
-    position: STAKEHOLDER_POSITION_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })), // Se traducirá en el componente
+    position: STAKEHOLDER_POSITION_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
     scope: MEDIA_SCOPE_OPTIONS,
 };
 
@@ -441,7 +430,7 @@ export const PROVIDER_COLUMN_OPTIONS_MAP = {
     boolean: ["Yes", "No"],
 };
 
-// --- NUEVAS CONSTANTES PARA SOCIOS ---
+// --- Constantes para Socios ---
 export const PARTNER_AREA_OPTIONS = ["Sostenibilidad", "Comercio", "Legal", "Tecnología", "Otro"];
 
 export const INITIAL_PARTNER_STATE = {
@@ -535,4 +524,120 @@ export const COST_COLUMN_OPTIONS_MAP_ADMIN = {
 };
 export const COST_COLUMN_OPTIONS_MAP_NON_OP = {
     category: COST_CATEGORIES_NON_OP,
+};
+
+// --- Tarea 1 (Eventos) ---
+export const EVENT_TYPE_OPTIONS = [
+    "Conference", "Meeting", "Exhibition", "Talks", "Boards"
+];
+
+export const EVENT_PARTICIPANT_ROLES = [
+    "Presenter", "Moderator", "Director", "Member", "Guest"
+];
+
+export const EVENT_VISIBILITY_OPTIONS = {
+    'all': 'Todos (Directores y Miembros)',
+    'directors': 'Solo Directores',
+    'users': 'Solo Miembros',
+};
+
+export const INITIAL_EVENT_STATE = {
+    name: '',
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date().toISOString().slice(0, 10),
+    startTime: '09:00',
+    endTime: '10:00',
+    eventType: EVENT_TYPE_OPTIONS[0],
+    topics: [],
+    participants: [],
+    visibility: 'all',
+    call_link: '', // --- NUEVO ---
+    minute_link: '', // --- NUEVO ---
+};
+
+// --- Tarea 2 (Directorios) ---
+export const MEMBER_DIRECTORY_COLUMNS = [
+    { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.representative", key: "representative", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.email", key: "email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.activity", key: "activity", sortable: true, filterable: true, optionsKey: 'activity', type: 'string' },
+    { labelKey: "profile.col.contacts", key: "contacts", sortable: false, filterable: true, type: 'contacts_array' },
+];
+export const BOARD_DIRECTORY_COLUMNS = [
+    { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.representative", key: "representative", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.email", key: "email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.activity", key: "activity", sortable: true, filterable: true, optionsKey: 'activity', type: 'string' },
+];
+export const INITIAL_PUBLIC_STAKEHOLDER_STATE = {
+    name: '',
+    type: 'Public', // Fijo
+    ambito: STAKEHOLDER_AMBITO_OPTIONS.National,
+    role: STAKEHOLDER_ROLE_OPTIONS[0],
+    position: STAKEHOLDER_POSITION_OPTIONS[0],
+    contact_person: '',
+    contact_email: '',
+    contact_phone: '',
+};
+export const PUBLIC_STAKEHOLDER_TABLE_COLUMNS = [
+    { labelKey: "stakeholder.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "stakeholder.col.scope", key: "ambito", sortable: true, filterable: true, optionsKey: 'ambito', type: 'string' },
+    { labelKey: "stakeholder.col.position", key: "position", sortable: true, filterable: true, optionsKey: 'position' },
+    { labelKey: "stakeholder.col.role", key: "role", sortable: true, filterable: true, optionsKey: 'role', type: 'string' },
+    { labelKey: "profile.contact_name", key: "contact_person", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.contact_email", key: "contact_email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.contact_phone", key: "contact_phone", sortable: false, filterable: true, type: 'string' },
+    { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
+];
+export const PUBLIC_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
+    ambito: Object.values(STAKEHOLDER_AMBITO_OPTIONS),
+    position: STAKEHOLDER_POSITION_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
+    role: STAKEHOLDER_ROLE_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
+};
+export const INITIAL_COMMISSION_STATE = {
+    name: '',
+    scope: '',
+    memberKeys: [], // Array of user IDs (uids)
+};
+export const COMMISSION_TABLE_COLUMNS = [
+    { labelKey: "commission.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "commission.col.scope", key: "scope", sortable: false, filterable: true, type: 'string' },
+    { labelKey: "commission.col.members", key: "memberKeys", sortable: false, filterable: true, type: 'array' },
+    { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
+];
+
+export const INITIAL_LEGAL_DOCUMENT_STATE = {
+    name: '',
+    date: new Date().toISOString().slice(0, 10),
+    link: '',
+};
+
+export const LEGAL_DOCUMENT_TABLE_COLUMNS = [
+    { labelKey: "governance.doc.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "governance.doc.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "governance.doc.col.link", key: "link", sortable: false, filterable: false, type: 'string' },
+    { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
+];
+
+export const GOVERNANCE_MEETING_TYPE_OPTIONS = ["Board", "Committee", "Assembly"];
+
+export const INITIAL_GOVERNANCE_MEETING_STATE = {
+    name: '',
+    date: new Date().toISOString().slice(0, 10),
+    type: GOVERNANCE_MEETING_TYPE_OPTIONS[0],
+    call_link: '',
+    minute_link: '',
+};
+
+export const GOVERNANCE_MEETING_TABLE_COLUMNS = [
+    { labelKey: "governance.meeting.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "governance.meeting.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "governance.meeting.col.type", key: "type", sortable: true, filterable: true, optionsKey: 'type', type: 'string' },
+    { labelKey: "governance.meeting.col.call_link", key: "call_link", sortable: false, filterable: false, type: 'string' },
+    { labelKey: "governance.meeting.col.minute_link", key: "minute_link", sortable: false, filterable: false, type: 'string' },
+    { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
+];
+
+export const GOVERNANCE_MEETING_COLUMN_OPTIONS_MAP = {
+    type: GOVERNANCE_MEETING_TYPE_OPTIONS,
 };

@@ -19,18 +19,18 @@ import {
     UserCheck,
     DollarSign,
     Handshake,
-    // TAREA 8: Nuevo icono
-    Radio
+    Radio,
+    BookUser,
+    Users2,
+    Shield // --- NUEVO Icono ---
 } from 'lucide-react'; 
 
-// Componente helper para los títulos de grupo
+// ... (SidebarGroup y SidebarLink sin cambios) ...
 const SidebarGroup = ({ title }) => (
     <h3 className="px-3 pt-6 pb-2 text-xs font-semibold uppercase tracking-wider text-sky-400/80">
         {title}
     </h3>
 );
-
-// Componente helper para los enlaces de navegación
 const SidebarLink = ({ label, icon: Icon, isActive, onClick }) => (
     <button
         onClick={onClick}
@@ -44,18 +44,17 @@ const SidebarLink = ({ label, icon: Icon, isActive, onClick }) => (
         <span className="text-sm font-medium">{label}</span>
     </button>
 );
+// ... (fin de componentes helper) ...
 
 const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
     const { t } = useTranslation(); 
 
     const ALL_VIEWS = [
         // Group: Members
-        // 'admin' quitado de user_profile
         { id: 'user_profile', labelKey: 'sidebar.user_profile', icon: User, requiredRole: ['director', 'user'], group: 'members' },
         { id: 'user_admin', labelKey: 'sidebar.user_admin', icon: Settings, requiredRole: ['admin'], group: 'members' },
         { id: 'admin_profiles', labelKey: 'sidebar.admin_profiles', icon: List, requiredRole: ['admin'], group: 'members' },
         { id: 'new_member_request', labelKey: 'sidebar.new_member_request', icon: UserPlus, requiredRole: ['admin'], group: 'members' },
-        // --- MODIFICADO: 'directorinvitee' quitado de requiredRole ---
         { id: 'member_approvals', labelKey: 'sidebar.member_approvals', icon: UserCheck, requiredRole: ['director'], group: 'members' },
 
         // Group: Public Affairs
@@ -66,11 +65,23 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         { id: 'objectivos', labelKey: 'sidebar.objectives', icon: Target, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
         { id: 'agenda_view', labelKey: 'sidebar.agenda_view', icon: Calendar, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
         { id: 'stakeholder_map', labelKey: 'sidebar.stakeholder_map', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
+        { id: 'events', labelKey: 'sidebar.events', icon: Calendar, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'public_affairs' },
 
         // Group: Communications
         { id: 'communications_log', labelKey: 'sidebar.communications_log', icon: MessageSquare, requiredRole: ['admin'], group: 'communications' }, 
         { id: 'press_log', labelKey: 'sidebar.press_log', icon: Megaphone, requiredRole: ['admin'], group: 'communications' },
         { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'communications' },
+
+        // Group: Database
+        { id: 'member_directory', labelKey: 'sidebar.member_directory', icon: BookUser, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'database' },
+        { id: 'board_directory', labelKey: 'sidebar.board_directory', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'database' },
+        { id: 'public_affairs_directory', labelKey: 'sidebar.public_affairs_directory', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'database' },
+        { id: 'media_directory', labelKey: 'sidebar.media_directory', icon: Radio, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'database' },
+        { id: 'partners_directory', labelKey: 'sidebar.partners_directory', icon: Handshake, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'database' },
+        { id: 'commissions_directory', labelKey: 'sidebar.commissions_directory', icon: Users2, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'database' },
+
+        // --- NUEVO GRUPO: Governance ---
+        { id: 'governance', labelKey: 'sidebar.governance', icon: Shield, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'governance' },
 
         // Group: Finance
         { id: 'finance_dashboard', labelKey: 'sidebar.finance_dashboard', icon: DollarSign, requiredRole: ['admin'], group: 'finance' },
@@ -83,6 +94,8 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         members: { title: t('sidebar.members'), items: visibleItems.filter(i => i.group === 'members') },
         public_affairs: { title: t('sidebar.public_affairs'), items: visibleItems.filter(i => i.group === 'public_affairs') },
         communications: { title: t('sidebar.communications'), items: visibleItems.filter(i => i.group === 'communications') },
+        database: { title: t('sidebar.database'), items: visibleItems.filter(i => i.group === 'database') }, 
+        governance: { title: t('sidebar.governance'), items: visibleItems.filter(i => i.group === 'governance') }, // --- NUEVO ---
         finance: { title: t('sidebar.finance'), items: visibleItems.filter(i => i.group === 'finance') },
     };
     
@@ -93,7 +106,7 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
             
             <div className="p-4 pt-6 pb-4">
                 <div className="text-2xl font-bold tracking-wider text-white px-2">
-                    UManage
+                    UMange
                 </div>
             </div>
             
