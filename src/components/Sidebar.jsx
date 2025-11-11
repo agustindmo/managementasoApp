@@ -22,7 +22,8 @@ import {
     Radio,
     BookUser,
     Users2,
-    Shield // --- NUEVO Icono ---
+    Shield,
+    Rss 
 } from 'lucide-react'; 
 
 // ... (SidebarGroup y SidebarLink sin cambios) ...
@@ -71,6 +72,7 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         { id: 'communications_log', labelKey: 'sidebar.communications_log', icon: MessageSquare, requiredRole: ['admin'], group: 'communications' }, 
         { id: 'press_log', labelKey: 'sidebar.press_log', icon: Megaphone, requiredRole: ['admin'], group: 'communications' },
         { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'communications' },
+        { id: 'bulletin_board', labelKey: 'sidebar.bulletin_board', icon: Rss, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'communications' },
 
         // Group: Database
         { id: 'member_directory', labelKey: 'sidebar.member_directory', icon: BookUser, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'database' },
@@ -95,7 +97,7 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         public_affairs: { title: t('sidebar.public_affairs'), items: visibleItems.filter(i => i.group === 'public_affairs') },
         communications: { title: t('sidebar.communications'), items: visibleItems.filter(i => i.group === 'communications') },
         database: { title: t('sidebar.database'), items: visibleItems.filter(i => i.group === 'database') }, 
-        governance: { title: t('sidebar.governance'), items: visibleItems.filter(i => i.group === 'governance') }, // --- NUEVO ---
+        governance: { title: t('sidebar.governance'), items: visibleItems.filter(i => i.group === 'governance') },
         finance: { title: t('sidebar.finance'), items: visibleItems.filter(i => i.group === 'finance') },
     };
     

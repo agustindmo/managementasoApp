@@ -33,8 +33,8 @@ import PublicAffairsDirectoryDashboard from './components/dashboards/PublicAffai
 import MediaDirectoryDashboard from './components/dashboards/MediaDirectoryDashboard.jsx';
 import PartnersDirectoryDashboard from './components/dashboards/PartnersDirectoryDashboard.jsx';
 import CommissionDashboard from './components/dashboards/CommissionDashboard.jsx';
-// --- NUEVO: Imports Tarea 3 ---
 import GovernanceDashboard from './components/dashboards/GovernanceDashboard.jsx';
+import BulletinDashboard from './components/dashboards/BulletinDashboard.jsx';
 
 
 // Placeholder views 
@@ -44,7 +44,6 @@ const CondicionDashboard = () => <div className="ml-64 p-8 text-center text-gray
 
 
 // --- 1. CONFIGURATION FALLBACK ---
-// ... (código existente de config) ...
 const HARDCODED_FALLBACK_CONFIG = {
     apiKey: "AIzaSyBC8dNvx1YFTrwJN74wuYWL7AzZg18cLso", 
     authDomain: "policyapp-e5b9e.firebaseapp.com",
@@ -77,7 +76,6 @@ function AppContent() {
 
     // 1. Firebase Initialization and Auth Setup
     useEffect(() => {
-        // ... (código existente) ...
         let auth, db;
         const config = getFirebaseConfig(); 
         let unsubscribeAuth = () => {};
@@ -130,9 +128,9 @@ function AppContent() {
     // Effect to handle navigation when role changes
     useEffect(() => {
         
-        // --- MODIFICADO: Añadido 'governance' ---
-        const userBaseViews = ['resumen', 'logros', 'events', 'member_directory', 'governance'];
-        const directorBaseViews = ['resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'media_stakeholder_map', 'events', 'member_directory', 'board_directory', 'public_affairs_directory', 'media_directory', 'partners_directory', 'commissions_directory', 'governance'];
+        const commsBaseViews = ['media_stakeholder_map', 'bulletin_board']; 
+        const userBaseViews = ['resumen', 'logros', 'events', 'member_directory', 'governance', 'bulletin_board']; 
+        const directorBaseViews = ['resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'events', 'member_directory', 'board_directory', 'public_affairs_directory', 'media_directory', 'partners_directory', 'commissions_directory', 'governance', ...commsBaseViews];
 
         // Vistas completas
         const adminViews = ['user_admin', 'admin_profiles', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', ...directorBaseViews];
@@ -160,7 +158,6 @@ function AppContent() {
     
     // Function to handle logout
     const handleLogout = async () => {
-        // ... (código existente) ...
         if (authInstance) {
             try { await signOut(authInstance); } 
             catch (e) { console.error("Error signing out:", e); }
@@ -170,7 +167,6 @@ function AppContent() {
     // 2. Conditional Rendering/Routing
     const renderDashboardView = () => {
         if (!isReady) {
-            // ... (código existente) ...
              return (
                 <div className="flex justify-center items-center h-screen bg-sky-950/90 text-white">
                     <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
@@ -180,7 +176,6 @@ function AppContent() {
         }
 
         if (!!userId && (!role || role === 'pending')) {
-             // ... (código existente) ...
              return (
                 <div className="p-8 text-center bg-yellow-900/50 border border-yellow-700 rounded-xl m-8 min-h-screen text-yellow-100">
                     <h2 className="text-2xl font-bold text-yellow-300 mb-4">Access Pending Approval</h2>
@@ -238,6 +233,8 @@ function AppContent() {
                 return <PressLogDashboard userId={userId} db={dbInstance} />;
             case 'media_stakeholder_map':
                 return <MediaStakeholderMapDashboard db={dbInstance} role={role} userId={userId} />;
+            case 'bulletin_board': 
+                return <BulletinDashboard userId={userId} db={dbInstance} role={role} />;
 
             // Database
             case 'member_directory':
@@ -253,7 +250,7 @@ function AppContent() {
             case 'commissions_directory': 
                 return <CommissionDashboard db={dbInstance} userId={userId} role={role} />;
 
-            // --- NUEVO: Governance ---
+            // Governance
             case 'governance':
                 return <GovernanceDashboard db={dbInstance} userId={userId} role={role} />;
 
@@ -276,7 +273,6 @@ function AppContent() {
     };
 
     const renderContent = () => {
-        // ... (código existente) ...
         const isUserAuthenticated = !!authInstance?.currentUser;
 
         if (!isUserAuthenticated && isReady) {
@@ -314,7 +310,6 @@ function AppContent() {
 
     return (
         <div className="font-sans min-h-screen bg-gradient-to-br from-sky-950 via-black to-black text-gray-200">
-            {/* ... (código existente de botones) ... */}
             <button
                 onClick={toggleLanguage}
                 className={`fixed top-4 ${authInstance?.currentUser ? 'right-40' : 'right-4'} z-50 p-2 bg-black/50 border border-sky-700/50 text-white rounded-full shadow-lg hover:bg-sky-800 transition duration-300 flex items-center text-sm backdrop-blur-md`}

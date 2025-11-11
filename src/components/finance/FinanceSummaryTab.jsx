@@ -6,7 +6,8 @@ import { getDbPaths } from '../../services/firebase.js';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import CardTitle from '../ui/CardTitle.jsx';
 import { BarChart, Loader2, TrendingUp, TrendingDown, CheckCircle } from 'lucide-react';
-// --- ELIMINADO: Importar FinanceCostDashboard ---
+// --- NUEVO: Importar el gráfico de Recharts ---
+import SimpleBarChart from '../charts/SimpleBarChart.jsx'; 
 
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
@@ -34,7 +35,9 @@ const SummaryMetric = ({ title, value, color, icon: Icon }) => (
 const FinanceSummaryTab = ({ db, userId }) => {
     const { t } = useTranslation();
     const [incomeData, setIncomeData] = useState({ fees: 0, donations: 0, services: 0, projects: 0 });
-    const [outcomeData, setOutcomeData] = useState({ admin: 0, nonOp: 0 });
+    // --- MODIFICADO: Almacenar listas completas de costos ---
+    const [adminCosts, setAdminCosts] = useState([]);
+    const [nonOpCosts, setNonOpCosts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const dbPaths = useMemo(() => getDbPaths(), []);
@@ -64,8 +67,10 @@ const FinanceSummaryTab = ({ db, userId }) => {
 
                 if (key === 'fees' || key === 'donations' || key === 'services' || key === 'projects') {
                     setIncomeData(prev => ({ ...prev, [key]: total }));
-                } else {
-                    setOutcomeData(prev => ({ ...prev, [key]: total }));
+                } else if (key === 'admin') {
+                    setAdminCosts(data); // Guardar lista completa
+                } else if (key === 'nonOp') {
+                    setNonOpCosts(data); // Guardar lista completa
                 }
 
                 loadedCount++;
@@ -84,13 +89,34 @@ const FinanceSummaryTab = ({ db, userId }) => {
         return () => unsubs.forEach(unsub => unsub());
     }, [db, dbPaths]);
 
-    // 2. Calcular Totales
-    const { totalIncome, totalOutcome, generalResult } = useMemo(() => {
+    // 2. Calcular Totales y Datos de Gráficos
+    const { totalIncome, totalOutcome, generalResult, adminCostChartData, nonOpCostChartData } = useMemo(() => {
         const totalIncome = Object.values(incomeData).reduce((sum, val) => sum + val, 0);
-        const totalOutcome = Object.values(outcomeData).reduce((sum, val) => sum + val, 0);
+        
+        // Procesar datos para gráficos de costos
+        const adminMap = adminCosts.reduce((acc, item) => {
+            const cat = item.category || 'Otro';
+            acc[cat] = (acc[cat] || 0) + (parseFloat(item.amount) || 0);
+            return acc;
+        }, {});
+        
+        const nonOpMap = nonOpCosts.reduce((acc, item) => {
+            const cat = item.category || 'Otro';
+            acc[cat] = (acc[cat] || 0) + (parseFloat(item.amount) || 0);
+            return acc;
+        }, {});
+        
+        const adminCostChartData = Object.keys(adminMap).map(name => ({ name, count: adminMap[name] }));
+        const nonOpCostChartData = Object.keys(nonOpMap).map(name => ({ name, count: nonOpMap[name] }));
+
+        const totalAdminCost = adminCosts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+        const totalNonOpCost = nonOpCosts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+        
+        const totalOutcome = totalAdminCost + totalNonOpCost;
         const generalResult = totalIncome - totalOutcome;
-        return { totalIncome, totalOutcome, generalResult };
-    }, [incomeData, outcomeData]);
+        
+        return { totalIncome, totalOutcome, generalResult, adminCostChartData, nonOpCostChartData };
+    }, [incomeData, adminCosts, nonOpCosts]);
 
     if (isLoading) {
         return (
@@ -145,15 +171,29 @@ const FinanceSummaryTab = ({ db, userId }) => {
                         <div className="space-y-2">
                             <h4 className="text-md font-semibold text-red-400">{t('finance.summary.outcome')}</h4>
                              <div className="bg-sky-950/50 rounded-lg p-4 space-y-3">
-                                <div className="flex justify-between text-sm"><span className="text-gray-400">{t('finance.admin_costs.title')}</span><span className="font-medium text-gray-200">{formatCurrency(outcomeData.admin)}</span></div>
-                                <div className="flex justify-between text-sm"><span className="text-gray-400">{t('finance.nonop_costs.title')}</span><span className="font-medium text-gray-200">{formatCurrency(outcomeData.nonOp)}</span></div>
+                                <div className="flex justify-between text-sm"><span className="text-gray-400">{t('finance.admin_costs.title')}</span><span className="font-medium text-gray-200">{formatCurrency(totalOutcome - totalIncome)}</span></div>
+                                <div className="flex justify-between text-sm"><span className="text-gray-400">{t('finance.nonop_costs.title')}</span><span className="font-medium text-gray-200">{formatCurrency(totalOutcome - totalIncome)}</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* --- ELIMINADO: Contenedores de Costos --- */}
+            {/* --- NUEVO: Gráficos de Costos --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
+                    <CardTitle title={t('finance.admin_costs.title')} icon={TrendingDown} />
+                    <div className="p-4">
+                        <SimpleBarChart data={adminCostChartData} fillColor="#ef4444" />
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
+                    <CardTitle title={t('finance.nonop_costs.title')} icon={TrendingDown} />
+                    <div className="p-4">
+                        <SimpleBarChart data={nonOpCostChartData} fillColor="#f97316" />
+                    </div>
+                </div>
+            </div>
             
         </div>
     );

@@ -37,6 +37,7 @@ export const getDbPaths = () => {
         financeMembershipFees: `${adminBase}/financeMembershipFees`,
         financeDonations: `${adminBase}/financeDonations`,
         financeServices: `${adminBase}/financeServices`,
+        // --- CORRECCIÓN: Typo 'adminBases' arreglado a 'adminBase' ---
         financeProjects: `${adminBase}/financeProjects`,
         financeAudits: `${adminBase}/financeAudits`,
 

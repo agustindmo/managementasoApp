@@ -641,3 +641,11 @@ export const GOVERNANCE_MEETING_TABLE_COLUMNS = [
 export const GOVERNANCE_MEETING_COLUMN_OPTIONS_MAP = {
     type: GOVERNANCE_MEETING_TYPE_OPTIONS,
 };
+
+// --- (NUEVO) Tarea 5: Constantes para Boletín ---
+// Re-usar EVENT_VISIBILITY_OPTIONS
+export const INITIAL_ANNOUNCEMENT_STATE = {
+    title: '',
+    content: '',
+    visibility: 'all', // 'all', 'directors', 'users'
+};

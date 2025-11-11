@@ -11,9 +11,12 @@ import {
     PARTNER_COLUMN_OPTIONS_MAP
 } from '../../utils/constants.js';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
-import FinancePartnerForm from '../forms/FinancePartnerForm.jsx'; // Importar el nuevo formulario
+import FinancePartnerForm from '../forms/FinancePartnerForm.jsx';
+// --- NUEVO: Importar gráfico ---
+import SimpleBarChart from '../charts/SimpleBarChart.jsx';
 
 const snapshotToArray = (snapshot) => {
+    // ... (código existente) ...
     if (!snapshot.exists()) return [];
     const val = snapshot.val();
     return Object.keys(val).map(key => ({
@@ -22,57 +25,11 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// --- Gráfico de Burbujas ---
-const PartnerBubbleChart = ({ partners, t }) => {
-    const data = useMemo(() => {
-        return partners.reduce((acc, partner) => {
-            const area = partner.area || 'Otro';
-            acc[area] = (acc[area] || 0) + 1;
-            return acc;
-        }, {});
-    }, [partners]);
-
-    const entries = Object.entries(data)
-        .sort(([, countA], [, countB]) => countB - countA)
-        .filter(([, count]) => count > 0);
-    
-    const total = entries.reduce((sum, [, count]) => sum + count, 0);
-    const max = Math.max(...entries.map(([, count]) => count));
-    const colors = ['bg-sky-600/70 border-sky-400', 'bg-blue-600/70 border-blue-400', 'bg-purple-600/70 border-purple-400', 'bg-orange-600/70 border-orange-400', 'bg-teal-600/70 border-teal-400'];
-
-    if (total === 0) {
-        return <p className="text-gray-500 text-center py-4">{t('stakeholder.no_engagement_data')}</p>;
-    }
-
-    return (
-         <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8">
-            <CardTitle title={`${t('finance.relations.partner.area_chart')} (${total})`} icon={PieChart} />
-            <div className="flex w-full h-48 p-4 bg-black/30 rounded-b-lg flex-wrap gap-4 items-center justify-center">
-                {entries.map(([label, count], index) => {
-                    const size = 48 + (count / max) * 64; // min 48px, max 112px
-                    return (
-                        <div 
-                            key={label}
-                            className={`flex flex-col items-center justify-center rounded-full shadow-2xl transition-all duration-300 ${colors[index % colors.length]}`}
-                            style={{ 
-                                height: `${size}px`, 
-                                width: `${size}px`,
-                                borderWidth: '2px'
-                            }}
-                            title={`${label}: ${count}`}
-                        >
-                            <span className="text-xl font-bold text-white">{count}</span>
-                            <span className="text-xs text-white/80 truncate px-2">{label}</span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
+// --- ELIMINADO: PartnerBubbleChart ya no es necesario ---
 
 // --- Fila de la Tabla ---
 const PartnerTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => {
+    // ... (código existente) ...
     return (
         <tr className="hover:bg-sky-900/60 transition-colors">
             <td className="px-6 py-3 text-sm font-medium text-white truncate max-w-[150px]" title={item.name}>{item.name}</td>
@@ -118,22 +75,18 @@ const PartnerTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => {
 
 // --- Cabecera de la Tabla ---
 const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, t }) => {
+    // ... (código existente) ...
     const label = t(column.labelKey); 
-
     if (column.key === 'actions' || column.key === 'agreement_link') {
         return <th key={column.key} className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{label}</th>;
     }
-    
     const isSorted = currentSort.key === column.key;
     const sortIcon = isSorted ? (currentSort.direction === 'asc' ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />) : null;
-    
     let options = [];
     if (column.filterable && column.optionsKey) {
          options = filterOptions[column.optionsKey] || [];
     }
-    
     const isTextInputFilter = !column.optionsKey;
-
     return (
         <th 
             key={column.key} 
@@ -149,7 +102,6 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
                     </span>
                     {sortIcon}
                 </div>
-                
                 {column.filterable && (
                     isTextInputFilter ? (
                          <input
@@ -180,49 +132,44 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 
 // --- Componente Principal de la Pestaña/Dashboard ---
 const FinancePartnersTab = ({ db, userId, role }) => {
+    // ... (código existente de estados) ...
     const { t } = useTranslation(); 
     const isAdmin = role === 'admin';
-    
     const [partners, setPartners] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const [sort, setSort] = useState({ key: 'name', direction: 'asc' }); 
     const [view, setView] = useState('table');
     const [activeRecord, setActiveRecord] = useState(null);
-
     const dbPathKey = 'financePartners';
     const filterOptionsMap = PARTNER_COLUMN_OPTIONS_MAP;
 
     // 1. Data Fetching
     useEffect(() => {
+        // ... (código existente) ...
         if (!db) return;
         setIsLoading(true); 
-
         const dataRef = ref(db, getDbPaths()[dbPathKey]); 
-        
         const unsubscribe = onValue(dataRef, (snapshot) => {
             try {
                 setPartners(snapshotToArray(snapshot));
             } catch (e) { console.error("Error processing Partner snapshot:", e); }
             finally { setIsLoading(false); }
         }, (error) => { console.error("Partner subscription Error:", error); setIsLoading(false); });
-        
         return () => unsubscribe();
     }, [db]);
 
 
     // 2. Data Filtering and Sorting Logic
     const filteredAndSortedItems = useMemo(() => {
+        // ... (código existente) ...
         let finalData = partners.filter(item => {
             for (const column of PARTNER_TABLE_COLUMNS) {
                 const key = column.key;
+                if (key === 'actions') continue;
                 const filterValue = filters[key];
-                
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
-
-                let itemValue = item[key] || '';
-                itemValue = String(itemValue);
-
+                let itemValue = String(item[key] || '');
                 if (column.optionsKey) {
                     if (itemValue !== filterValue) return false;
                 }
@@ -232,7 +179,6 @@ const FinancePartnersTab = ({ db, userId, role }) => {
             }
             return true;
         });
-
         if (sort.key) {
             finalData.sort((a, b) => {
                 const aValue = a[sort.key] || '';
@@ -240,11 +186,25 @@ const FinancePartnersTab = ({ db, userId, role }) => {
                 return (sort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
             });
         }
-        
         return finalData;
     }, [partners, filters, sort]);
+    
+    // --- NUEVO: Formatear datos para el gráfico ---
+    const chartData = useMemo(() => {
+        const dataMap = partners.reduce((acc, partner) => {
+            const area = partner.area || 'Otro';
+            acc[area] = (acc[area] || 0) + 1;
+            return acc;
+        }, {});
+        
+        return Object.keys(dataMap).map(key => ({
+            name: key,
+            count: dataMap[key]
+        }));
+    }, [partners]);
 
     // Handlers
+    // ... (código existente de handlers) ...
     const handleDelete = async (id) => {
         if (db && isAdmin && window.confirm(t('policy.confirm_delete'))) { 
             try {
@@ -253,7 +213,6 @@ const FinancePartnersTab = ({ db, userId, role }) => {
             } catch (e) { console.error("Error deleting partner document:", e); }
         }
     };
-    
     const handleSortChange = (key) => {
         setSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
     };
@@ -261,6 +220,7 @@ const FinancePartnersTab = ({ db, userId, role }) => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
     const handleOpenForm = (record = null) => {
+        if (!isAdmin) return;
         setActiveRecord(record);
         setView('form');
     };
@@ -271,6 +231,7 @@ const FinancePartnersTab = ({ db, userId, role }) => {
 
     // 3. Render Logic
     if (isLoading) {
+        // ... (código existente) ...
         return (
             <div className="flex justify-center items-center h-48">
                 <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
@@ -280,6 +241,7 @@ const FinancePartnersTab = ({ db, userId, role }) => {
     }
     
     if (view === 'form') {
+        // ... (código existente) ...
         return (
             <FinancePartnerForm
                 userId={userId}
@@ -294,7 +256,13 @@ const FinancePartnersTab = ({ db, userId, role }) => {
     
     return (
         <div className="space-y-8">
-            <PartnerBubbleChart partners={partners} t={t} />
+            {/* --- MODIFICADO: Usar SimpleBarChart --- */}
+            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
+                <CardTitle title={`${t('finance.relations.partner.area_chart')} (${partners.length})`} icon={PieChart} />
+                <div className="p-4">
+                    <SimpleBarChart data={chartData} fillColor="#82ca9d" />
+                </div>
+            </div>
         
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
                 <div className="flex items-center justify-between p-4 bg-sky-900/70 rounded-t-xl border-b border-sky-700/50">

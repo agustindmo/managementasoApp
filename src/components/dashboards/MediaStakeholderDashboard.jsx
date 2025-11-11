@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, Loader2, Radio as MapIcon, LayoutList, ArrowUp, ArrowDown, PieChart, Target, PlusCircle, Edit, Trash2 } from 'lucide-react'; 
-import { ref, onValue, remove } from 'firebase/database'; // Import remove
+import { ref, onValue, remove } from 'firebase/database';
 import { getDbPaths } from '../../services/firebase.js';
 import CardTitle from '../ui/CardTitle.jsx';
 import SelectField from '../ui/SelectField.jsx'; 
@@ -15,10 +15,12 @@ import {
     MEDIA_STAKEHOLDER_COLUMN_OPTIONS_MAP
 } from '../../utils/constants.js';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
-// Importar el nuevo formulario
 import MediaStakeholderForm from '../forms/MediaStakeholderForm.jsx';
+// --- NUEVO: Importar gráfico ---
+import SimpleBarChart from '../charts/SimpleBarChart.jsx';
 
 const snapshotToArray = (snapshot) => {
+    // ... (código existente) ...
     if (!snapshot.exists()) return [];
     const val = snapshot.val();
     return Object.keys(val).map(key => ({
@@ -27,60 +29,11 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// --- NUEVO: Componente de Gráfico de Burbujas ---
-const BubbleChartMock = ({ data, t, title }) => {
-    const entries = Object.entries(data)
-        .sort(([, countA], [, countB]) => countB - countA)
-        .filter(([, count]) => count > 0);
-    
-    const total = entries.reduce((sum, [, count]) => sum + count, 0);
-    const max = Math.max(...entries.map(([, count]) => count));
-
-    // Asignar colores basados en la clave (ej. Posición)
-    const getBgColor = (key) => {
-        if (key === t('stakeholder.position.in_favor')) return 'bg-green-600/70 border-green-400';
-        if (key === t('stakeholder.position.against')) return 'bg-red-600/70 border-red-400';
-        if (key === t('stakeholder.position.neutral')) return 'bg-yellow-600/70 border-yellow-400';
-        // Colores de fallback para Scope
-        const colors = ['bg-sky-600/70 border-sky-400', 'bg-blue-600/70 border-blue-400', 'bg-purple-600/70 border-purple-400', 'bg-orange-600/70 border-orange-400'];
-        const index = Object.keys(data).indexOf(key);
-        return colors[index % colors.length];
-    };
-
-    if (total === 0) {
-        return <p className="text-gray-500 text-center py-4">{t('stakeholder.no_engagement_data')}</p>;
-    }
-
-    return (
-         <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-            <CardTitle title={`${title} (${total})`} icon={PieChart} />
-            <div className="flex w-full h-48 p-4 bg-black/30 rounded-b-lg flex-wrap gap-4 items-center justify-center">
-                {entries.map(([label, count]) => {
-                    const size = 48 + (count / max) * 64; // min 48px, max 112px
-                    return (
-                        <div 
-                            key={label}
-                            className={`flex flex-col items-center justify-center rounded-full shadow-2xl transition-all duration-300 ${getBgColor(label)}`}
-                            style={{ 
-                                height: `${size}px`, 
-                                width: `${size}px`,
-                                borderWidth: '2px'
-                            }}
-                            title={`${label}: ${count}`}
-                        >
-                            <span className="text-xl font-bold text-white">{count}</span>
-                            <span className="text-xs text-white/80 truncate px-2">{label}</span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
+// --- ELIMINADO: BubbleChartMock ya no es necesario ---
 
 // --- Cabecera de la Tabla ---
 const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, currentFilters, t }) => {
+    // ... (código existente) ...
     const label = t(column.labelKey); 
     if (column.key === 'actions') {
         return <th key={column.key} className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{label}</th>;
@@ -141,6 +94,7 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 
 // --- Fila de la Tabla ---
 const StakeholderTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => {
+    // ... (código existente) ...
     return (
         <tr className="hover:bg-sky-900/60 transition-colors">
             <td className="px-6 py-2 text-sm font-medium text-white truncate max-w-[150px]" title={item.name}>{item.name}</td>
@@ -175,8 +129,9 @@ const StakeholderTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => {
 // --- Componente de Dashboard Principal ---
 const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
     const { t } = useTranslation(); 
+    // ... (estados existentes) ...
     const [pressLogItems, setPressLogItems] = useState([]);
-    const [mediaStakeholders, setMediaStakeholders] = useState([]); // El "mapa"
+    const [mediaStakeholders, setMediaStakeholders] = useState([]); 
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const [sort, setSort] = useState({ key: 'name', direction: 'asc' });
@@ -186,31 +141,28 @@ const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
     const [activeRecord, setActiveRecord] = useState(null);
     const isAdmin = role === 'admin';
 
-    // 1. Fetch data from Press Log (para métricas) AND Media Stakeholders (para la tabla)
+    // 1. Fetch data
     useEffect(() => {
+        // ... (código existente) ...
         if (!db) return;
         setIsLoading(true);
         let pressLogLoaded = false;
         let stakeholdersLoaded = false;
-
         const checkDone = () => {
             if (pressLogLoaded && stakeholdersLoaded) setIsLoading(false);
         };
-
         const pressLogRef = ref(db, getDbPaths().pressLog);
         const unsubPressLog = onValue(pressLogRef, (snapshot) => {
             try { setPressLogItems(snapshotToArray(snapshot)); } 
             catch (e) { console.error("Press Log fetch error:", e); }
             finally { pressLogLoaded = true; checkDone(); }
         }, (error) => { console.error("Press Log Subscription Error:", error); pressLogLoaded = true; checkDone(); });
-        
         const stakeholdersRef = ref(db, getDbPaths().mediaStakeholders);
         const unsubStakeholders = onValue(stakeholdersRef, (snapshot) => {
             try { setMediaStakeholders(snapshotToArray(snapshot)); }
             catch (e) { console.error("Media Stakeholders fetch error:", e); }
             finally { stakeholdersLoaded = true; checkDone(); }
         }, (error) => { console.error("Media Stakeholders Subscription Error:", error); stakeholdersLoaded = true; checkDone(); });
-
         return () => {
             unsubPressLog();
             unsubStakeholders();
@@ -219,61 +171,72 @@ const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
 
     // 2. Filtrar Press Log por Año
     const filteredPressLogItems = useMemo(() => {
+        // ... (código existente) ...
         if (yearFilter === ALL_YEAR_FILTER) return pressLogItems;
         return pressLogItems.filter(item => item.date && item.date.startsWith(yearFilter));
     }, [pressLogItems, yearFilter]);
 
     // 3. Aggregate Metrics (Contadores) from Press Log
     const stakeholderMetrics = useMemo(() => {
+        // ... (código existente) ...
         let totalEngagements = 0;
         const uniqueNames = new Set();
-        
         filteredPressLogItems.forEach(log => {
             const keys = log.mediaStakeholderKeys || [];
             keys.forEach(key => {
-                totalEngagements++; // Contar cada aparición
-                uniqueNames.add(key); // Añadir a Set para conteo único
+                totalEngagements++; 
+                uniqueNames.add(key); 
             });
         });
-        
         return {
             totalUnique: uniqueNames.size,
             totalEngagements: totalEngagements,
         };
     }, [filteredPressLogItems]);
 
-    // 4. Aggregate Treemaps from Media Stakeholders list (la tabla principal)
+    // 4. Aggregate Charts from Media Stakeholders list
     const { treemapByPosition, treemapByScope } = useMemo(() => {
+        // ... (código existente) ...
         const treemapByPosition = {};
         const treemapByScope = {};
-
         mediaStakeholders.forEach(s => {
             const positionKey = t(s.position) || 'N/A';
             const scopeKey = s.scope || 'N/A';
-            
             treemapByPosition[positionKey] = (treemapByPosition[positionKey] || 0) + 1;
             treemapByScope[scopeKey] = (treemapByScope[scopeKey] || 0) + 1;
         });
-        
         return { treemapByPosition, treemapByScope };
     }, [mediaStakeholders, t]);
+    
+    // --- NUEVO: Formatear datos para Recharts ---
+    const positionChartData = useMemo(() => 
+        Object.keys(treemapByPosition).map(key => ({ 
+            name: key, 
+            count: treemapByPosition[key] 
+        })), 
+    [treemapByPosition]);
+    
+    const scopeChartData = useMemo(() => 
+        Object.keys(treemapByScope).map(key => ({ 
+            name: key, 
+            count: treemapByScope[key] 
+        })), 
+    [treemapByScope]);
 
 
     // 5. Filtering and Sorting Logic (para la tabla)
     const filteredStakeholders = useMemo(() => {
-        // No filtramos por año la lista principal de stakeholders
+        // ... (código existente) ...
         let currentData = mediaStakeholders; 
-        
         currentData = currentData.filter(item => {
             for (const key in filters) {
                 const filterValue = filters[key];
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
                 const itemValue = String(item[key] || '');
-                if (itemValue !== filterValue) return false;
+                if (!itemValue.toLowerCase().includes(filterValue.toLowerCase())) return false;
             }
             return true;
         });
-
         if (sort.key) {
             currentData.sort((a, b) => {
                 const aValue = a[sort.key] || '';
@@ -281,11 +244,11 @@ const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
                 return (sort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
             });
         }
-        
         return currentData; 
     }, [mediaStakeholders, filters, sort]);
 
     // Handlers
+    // ... (código existente de handlers) ...
     const handleSortChange = (key) => {
         setSort(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }));
     };
@@ -322,8 +285,6 @@ const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
         );
     }
 
-    // --- Render Lógica ---
-
     if (view === 'form') {
         return (
              <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -333,6 +294,7 @@ const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
                     initialData={activeRecord}
                     onClose={handleCloseForm}
                     mode={activeRecord ? 'edit' : 'add'}
+                    role={role}
                 />
             </div>
         );
@@ -345,7 +307,6 @@ const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
                     <MapIcon className="w-8 h-8 mr-3 text-sky-400" />
                     {t('media_stakeholder.title')}
                 </h1>
-                
                 <div className="rounded-xl shadow max-w-xs border border-sky-700/50 bg-black/40 backdrop-blur-lg p-2 mt-4 sm:mt-0">
                     <SelectField 
                         label={t('director.filter_year')}
@@ -368,12 +329,23 @@ const MediaStakeholderMapDashboard = ({ db, userId, role }) => {
                 </div>
             </div>
 
-            {/* --- MODIFICADO: Usar BubbleChartMock en lugar de TreemapMock --- */}
+            {/* --- MODIFICADO: Usar SimpleBarChart en lugar de BubbleChartMock --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <BubbleChartMock data={treemapByPosition} t={t} title={t('media_stakeholder.position_chart')} />
-                <BubbleChartMock data={treemapByScope} t={t} title={t('media_stakeholder.scope_chart')} />
+                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
+                    <CardTitle title={t('media_stakeholder.position_chart')} icon={PieChart} />
+                    <div className="p-4">
+                        <SimpleBarChart data={positionChartData} fillColor="#8884d8" />
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
+                    <CardTitle title={t('media_stakeholder.scope_chart')} icon={PieChart} />
+                    <div className="p-4">
+                        <SimpleBarChart data={scopeChartData} fillColor="#82ca9d" />
+                    </div>
+                </div>
             </div>
-
+            
+            {/* --- Tabla (sin cambios) --- */}
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
                 <div className="flex items-center justify-between p-4 bg-sky-900/70 rounded-t-xl border-b border-sky-700/50">
                     <div className="flex items-center space-x-3">
