@@ -50,30 +50,30 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
 
     const ALL_VIEWS = [
         // Group: Members
+        // 'admin' quitado de user_profile
         { id: 'user_profile', labelKey: 'sidebar.user_profile', icon: User, requiredRole: ['director', 'user'], group: 'members' },
         { id: 'user_admin', labelKey: 'sidebar.user_admin', icon: Settings, requiredRole: ['admin'], group: 'members' },
         { id: 'admin_profiles', labelKey: 'sidebar.admin_profiles', icon: List, requiredRole: ['admin'], group: 'members' },
         { id: 'new_member_request', labelKey: 'sidebar.new_member_request', icon: UserPlus, requiredRole: ['admin'], group: 'members' },
+        // --- MODIFICADO: 'directorinvitee' quitado de requiredRole ---
         { id: 'member_approvals', labelKey: 'sidebar.member_approvals', icon: UserCheck, requiredRole: ['director'], group: 'members' },
 
         // Group: Public Affairs
         { id: 'policy_data', labelKey: 'sidebar.policy_data', icon: Database, requiredRole: ['admin'], group: 'public_affairs' },
         { id: 'activity_log', labelKey: 'sidebar.activity_log', icon: Clock, requiredRole: ['admin'], group: 'public_affairs' }, 
-        { id: 'resumen', labelKey: 'sidebar.summary', icon: BarChart2, requiredRole: ['admin', 'director', 'user'], group: 'public_affairs' }, 
-        { id: 'logros', labelKey: 'sidebar.achievements', icon: Briefcase, requiredRole: ['admin', 'director', 'user'], group: 'public_affairs' },
-        { id: 'objectivos', labelKey: 'sidebar.objectives', icon: Target, requiredRole: ['admin', 'director'], group: 'public_affairs' },
-        { id: 'agenda_view', labelKey: 'sidebar.agenda_view', icon: Calendar, requiredRole: ['admin', 'director'], group: 'public_affairs' },
-        { id: 'stakeholder_map', labelKey: 'sidebar.stakeholder_map', icon: Users, requiredRole: ['admin', 'director'], group: 'public_affairs' },
+        { id: 'resumen', labelKey: 'sidebar.summary', icon: BarChart2, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'public_affairs' }, 
+        { id: 'logros', labelKey: 'sidebar.achievements', icon: Briefcase, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'public_affairs' },
+        { id: 'objectivos', labelKey: 'sidebar.objectives', icon: Target, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
+        { id: 'agenda_view', labelKey: 'sidebar.agenda_view', icon: Calendar, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
+        { id: 'stakeholder_map', labelKey: 'sidebar.stakeholder_map', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
 
         // Group: Communications
         { id: 'communications_log', labelKey: 'sidebar.communications_log', icon: MessageSquare, requiredRole: ['admin'], group: 'communications' }, 
         { id: 'press_log', labelKey: 'sidebar.press_log', icon: Megaphone, requiredRole: ['admin'], group: 'communications' },
-        { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin', 'director'], group: 'communications' },
+        { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'communications' },
 
         // Group: Finance
-        // --- MODIFICADO: 'director' puede ver el dashboard ---
-        { id: 'finance_dashboard', labelKey: 'sidebar.finance_dashboard', icon: DollarSign, requiredRole: ['admin', 'director'], group: 'finance' },
-        // --- MODIFICADO: 'director' YA NO puede ver las relaciones ---
+        { id: 'finance_dashboard', labelKey: 'sidebar.finance_dashboard', icon: DollarSign, requiredRole: ['admin'], group: 'finance' },
         { id: 'finance_relations', labelKey: 'sidebar.finance_relations', icon: Handshake, requiredRole: ['admin'], group: 'finance' },
     ];
 

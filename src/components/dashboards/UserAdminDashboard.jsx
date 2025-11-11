@@ -5,7 +5,8 @@ import { getDbPaths } from '../../services/firebase.js';
 import CardTitle from '../ui/CardTitle.jsx';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
 
-const ROLE_OPTIONS = ['user', 'director', 'admin'];
+// --- MODIFICADO: Añadidos nuevos roles ---
+const ROLE_OPTIONS = ['user', 'director', 'admin', 'userinvitee', 'directorinvitee'];
 
 // Función para procesar la lista de PENDIENTES
 const snapshotToRequestsArray = (snapshot) => {
@@ -93,7 +94,8 @@ const UserAdminDashboard = ({ db, userId }) => {
 
     // 2. Handle role assignment/rejection (para PENDIENTES)
     const handleAssignRole = async (request) => {
-        const newRole = prompt(t('admin.prompt_modify', {email: request.email}), 'user');
+        // --- MODIFICADO: Prompt actualizado ---
+        const newRole = prompt(t('admin.prompt_modify', {email: request.email}) + ` (user, director, admin, userinvitee, directorinvitee)`, 'user');
 
         if (!newRole || !ROLE_OPTIONS.includes(newRole.toLowerCase())) {
             alert(t('admin.invalid_role'));
@@ -135,7 +137,8 @@ const UserAdminDashboard = ({ db, userId }) => {
     
     // Modificar el rol de un usuario activo
     const handleModifyRole = async (user) => {
-        const newRole = prompt(t('admin.prompt_modify', {email: user.email}), user.role);
+        // --- MODIFICADO: Prompt actualizado ---
+        const newRole = prompt(t('admin.prompt_modify', {email: user.email}) + ` (user, director, admin, userinvitee, directorinvitee)`, user.role);
 
         if (!newRole || !ROLE_OPTIONS.includes(newRole.toLowerCase())) {
             alert(t('admin.invalid_role'));

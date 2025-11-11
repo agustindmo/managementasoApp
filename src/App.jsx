@@ -101,9 +101,10 @@ function AppContent() {
                 unsubscribeRole = onValue(roleRef, (snapshot) => {
                     const assignedRole = snapshot.val() || 'pending'; 
                     setRole(assignedRole);
+                    // --- MODIFICADO: 'directorinvitee' ahora va a 'resumen' por defecto ---
                     if (assignedRole === 'admin') setActiveView('user_admin'); 
                     else if (assignedRole === 'director') setActiveView('member_approvals');
-                    else if (assignedRole === 'user') setActiveView('resumen'); 
+                    else if (assignedRole === 'user' || assignedRole === 'userinvitee' || assignedRole === 'directorinvitee') setActiveView('resumen'); 
                     else setRole('pending');
                 });
             } else {
@@ -120,21 +121,33 @@ function AppContent() {
 
     // Effect to handle navigation when role changes
     useEffect(() => {
-        // --- MODIFICADO: 'user_profile' quitado de adminViews ---
-        const adminViews = ['user_admin', 'admin_profiles', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', 'media_stakeholder_map', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view'];
         
-        // --- MODIFICADO: Añadidas vistas de finanzas y media map para director ---
-        const directorViews = ['user_profile', 'member_approvals', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'finance_dashboard', 'finance_relations', 'media_stakeholder_map'];
-        const userViews = ['user_profile', 'resumen', 'logros'];
+        // --- MODIFICADO: Listas de vistas actualizadas ---
+        const userBaseViews = ['resumen', 'logros'];
+        // Vistas de Director (sin perfil)
+        const directorBaseViews = ['resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'media_stakeholder_map'];
+
+        // Vistas completas
+        const adminViews = ['user_admin', 'admin_profiles', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', 'media_stakeholder_map', ...userBaseViews, 'objectivos', 'stakeholder_map', 'agenda_view'];
+        const directorViews = ['user_profile', 'member_approvals', ...directorBaseViews];
+        const directorInviteeViews = [...directorBaseViews]; // Sin 'user_profile' y sin 'member_approvals'
+        const userViews = ['user_profile', ...userBaseViews];
+        const userInviteeViews = [...userBaseViews]; // Sin 'user_profile'
         
         if (role === 'admin' && !adminViews.includes(activeView)) {
             setActiveView('user_admin'); 
         } 
         else if (role === 'director' && !directorViews.includes(activeView)) {
-            setActiveView('member_approvals');
-        } 
+            setActiveView('member_approvals'); // Director default
+        }
+        else if (role === 'directorinvitee' && !directorInviteeViews.includes(activeView)) {
+            setActiveView('resumen'); // Director Invitee default
+        }
         else if (role === 'user' && !userViews.includes(activeView)) {
-            setActiveView('resumen');
+            setActiveView('resumen'); // User default
+        }
+        else if (role === 'userinvitee' && !userInviteeViews.includes(activeView)) {
+            setActiveView('resumen'); // User Invitee default
         }
     }, [role, activeView]);
     
@@ -212,15 +225,12 @@ function AppContent() {
             case 'press_log':
                 return <PressLogDashboard userId={userId} db={dbInstance} />;
             
-            // --- MODIFICADO: 'userId' prop añadida ---
             case 'media_stakeholder_map':
                 return <MediaStakeholderMapDashboard db={dbInstance} role={role} userId={userId} />;
 
             // Finance
-            // --- MODIFICADO: 'role' prop pasada ---
             case 'finance_dashboard':
                 return <FinanceDashboard userId={userId} db={dbInstance} role={role} />;
-            // --- MODIFICADO: 'role' prop pasada ---
             case 'finance_relations':
                 return <FinanceRelationsDashboard userId={userId} db={dbInstance} role={role} />;
 
@@ -252,7 +262,8 @@ function AppContent() {
             );
         }
         
-        const showSidebar = role === 'admin' || role === 'director' || role ==='user';
+        // --- MODIFICADO: Añadidos nuevos roles al check ---
+        const showSidebar = role === 'admin' || role === 'director' || role === 'user' || role === 'directorinvitee' || role === 'userinvitee';
         const contentPadding = showSidebar ? 'pl-64' : 'px-4'; 
 
         return (
