@@ -93,7 +93,7 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
             
             <div className="p-4 pt-6 pb-4">
                 <div className="text-2xl font-bold tracking-wider text-white px-2">
-                    UMange
+                    UManage
                 </div>
             </div>
             
