@@ -120,9 +120,11 @@ function AppContent() {
 
     // Effect to handle navigation when role changes
     useEffect(() => {
-        // TAREA 8: Añadir 'media_stakeholder_map' a adminViews
-        const adminViews = ['user_admin', 'admin_profiles', 'user_profile', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', 'media_stakeholder_map', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view'];
-        const directorViews = ['user_profile', 'member_approvals', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view'];
+        // --- MODIFICADO: 'user_profile' quitado de adminViews ---
+        const adminViews = ['user_admin', 'admin_profiles', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', 'media_stakeholder_map', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view'];
+        
+        // --- MODIFICADO: Añadidas vistas de finanzas y media map para director ---
+        const directorViews = ['user_profile', 'member_approvals', 'resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'finance_dashboard', 'finance_relations', 'media_stakeholder_map'];
         const userViews = ['user_profile', 'resumen', 'logros'];
         
         if (role === 'admin' && !adminViews.includes(activeView)) {
@@ -209,15 +211,18 @@ function AppContent() {
                 return <CommunicationsDashboard db={dbInstance} />;
             case 'press_log':
                 return <PressLogDashboard userId={userId} db={dbInstance} />;
-            // TAREA 8: Añadir nueva ruta
+            
+            // --- MODIFICADO: 'userId' prop añadida ---
             case 'media_stakeholder_map':
-                return <MediaStakeholderMapDashboard db={dbInstance} />;
+                return <MediaStakeholderMapDashboard db={dbInstance} role={role} userId={userId} />;
 
             // Finance
+            // --- MODIFICADO: 'role' prop pasada ---
             case 'finance_dashboard':
-                return <FinanceDashboard userId={userId} db={dbInstance} />;
+                return <FinanceDashboard userId={userId} db={dbInstance} role={role} />;
+            // --- MODIFICADO: 'role' prop pasada ---
             case 'finance_relations':
-                return <FinanceRelationsDashboard userId={userId} db={dbInstance} />;
+                return <FinanceRelationsDashboard userId={userId} db={dbInstance} role={role} />;
 
             // Placeholders
             case 'sector':
@@ -247,7 +252,7 @@ function AppContent() {
             );
         }
         
-        const showSidebar = role === 'admin' || role === 'director' || role === 'user';
+        const showSidebar = role === 'admin' || role === 'director' || role ==='user';
         const contentPadding = showSidebar ? 'pl-64' : 'px-4'; 
 
         return (

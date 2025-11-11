@@ -6,7 +6,7 @@ import { getDbPaths } from '../../services/firebase.js';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import CardTitle from '../ui/CardTitle.jsx';
 import { BarChart, Loader2, TrendingUp, TrendingDown, CheckCircle } from 'lucide-react';
-import FinanceCostDashboard from '../dashboards/FinanceCostDashboard.jsx'; // Importar el nuevo dashboard
+// --- ELIMINADO: Importar FinanceCostDashboard ---
 
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
@@ -153,19 +153,8 @@ const FinanceSummaryTab = ({ db, userId }) => {
                 </div>
             </div>
 
-            {/* 2. Contenedor para Costos Administrativos */}
-            <FinanceCostDashboard 
-                userId={userId}
-                db={db}
-                costType="admin"
-            />
-
-            {/* 3. Contenedor para Costos No Operativos */}
-            <FinanceCostDashboard 
-                userId={userId}
-                db={db}
-                costType="non_op"
-            />
+            {/* --- ELIMINADO: Contenedores de Costos --- */}
+            
         </div>
     );
 };

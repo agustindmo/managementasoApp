@@ -1,7 +1,7 @@
 // src/components/dashboards/FinanceDashboard.jsx
 
 import React, { useState } from 'react';
-import { DollarSign, BarChart, FileText, Gift, Briefcase, Star, Users } from 'lucide-react'; // Importado Users
+import { DollarSign, BarChart, FileText, Gift, Briefcase, Star, Users, TrendingDown } from 'lucide-react'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import CardTitle from '../ui/CardTitle.jsx';
 // Importar los nuevos componentes de pestañas
@@ -11,14 +11,15 @@ import DonationsTab from '../finance/DonationsTab.jsx';
 import ServicesTab from '../finance/ServicesTab.jsx';
 import ProjectsTab from '../finance/ProjectsTab.jsx';
 import AuditsTab from '../finance/AuditsTab.jsx';
+import FinanceCostsTab from '../finance/FinanceCostsTab.jsx'; 
 
 const TABS = [
     { id: 'summary', labelKey: 'finance.tab.summary', icon: BarChart },
+    { id: 'costs', labelKey: 'finance.admin_costs.title', icon: TrendingDown }, 
     { id: 'fees', labelKey: 'finance.tab.fees', icon: Users },
     { id: 'donations', labelKey: 'finance.tab.donations', icon: Gift },
     { id: 'services', labelKey: 'finance.tab.services', icon: Briefcase },
     { id: 'projects', labelKey: 'finance.tab.projects', icon: Star },
-    // *** CORRECCIÓN: 'id:key' cambiado a 'id' ***
     { id: 'audits', labelKey: 'finance.tab.audits', icon: FileText },
 ];
 
@@ -37,24 +38,33 @@ const TabButton = ({ isActive, onClick, label, icon: Icon }) => (
     </button>
 );
 
-const FinanceDashboard = ({ userId, db }) => { 
+const FinanceDashboard = ({ userId, db, role }) => { 
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('summary');
+    const isAdmin = role === 'admin';
+
+    // --- MODIFICADO: Filtrar pestañas basado en el rol ---
+    const visibleTabs = isAdmin 
+        ? TABS 
+        : TABS.filter(tab => tab.id === 'summary' || tab.id === 'audits');
     
     const renderTabContent = () => {
         switch (activeTab) {
             case 'summary':
                 return <FinanceSummaryTab db={db} />;
+            case 'costs': 
+                return isAdmin ? <FinanceCostsTab db={db} userId={userId} role={role} /> : null;
             case 'fees':
-                return <MembershipFeesTab db={db} userId={userId} />;
+                return isAdmin ? <MembershipFeesTab db={db} userId={userId} role={role} /> : null;
             case 'donations':
-                return <DonationsTab db={db} userId={userId} />;
+                return isAdmin ? <DonationsTab db={db} userId={userId} role={role} /> : null;
             case 'services':
-                return <ServicesTab db={db} userId={userId} />;
+                return isAdmin ? <ServicesTab db={db} userId={userId} role={role} /> : null;
             case 'projects':
-                return <ProjectsTab db={db} userId={userId} />;
+                return isAdmin ? <ProjectsTab db={db} userId={userId} role={role} /> : null;
             case 'audits':
-                return <AuditsTab db={db} userId={userId} />;
+                // Directores y Admins pueden ver auditorías
+                return <AuditsTab db={db} userId={userId} role={role} />;
             default:
                 return null;
         }
@@ -69,7 +79,8 @@ const FinanceDashboard = ({ userId, db }) => {
 
             {/* Contenedor de Pestañas */}
             <div className="mb-6 p-2 rounded-xl border border-sky-700/50 bg-black/40 backdrop-blur-lg flex flex-wrap gap-2">
-                {TABS.map(tab => (
+                {/* --- MODIFICADO: Mapear sobre visibleTabs --- */}
+                {visibleTabs.map(tab => (
                     <TabButton
                         key={tab.id}
                         isActive={activeTab === tab.id}

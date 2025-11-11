@@ -6,7 +6,7 @@ import { useTranslation } from '../../context/TranslationContext.jsx';
 import FinanceAuditTable from '../tables/FinanceAuditTable.jsx';
 import FinanceAuditForm from '../forms/FinanceAuditForm.jsx';
 
-const FinanceAuditDashboard = ({ userId, db }) => { 
+const FinanceAuditDashboard = ({ userId, db, role }) => { // <-- role prop
     const { t } = useTranslation();
     const [view, setView] = useState('table'); // 'table' or 'form'
     const [activeRecord, setActiveRecord] = useState(null); 
@@ -38,6 +38,7 @@ const FinanceAuditDashboard = ({ userId, db }) => {
                  <FinanceAuditTable
                     db={db} 
                     onOpenForm={handleOpenForm} 
+                    role={role} // <-- Pass role
                 />
             ) : (
                  <FinanceAuditForm
@@ -46,6 +47,7 @@ const FinanceAuditDashboard = ({ userId, db }) => {
                     initialData={activeRecord} 
                     onClose={handleCloseForm}
                     mode={activeRecord ? 'edit' : 'add'}
+                    role={role} // <-- Pass role
                 />
             )}
         </div>

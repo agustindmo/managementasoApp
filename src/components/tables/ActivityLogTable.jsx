@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, remove } from 'firebase/database';
-// TAREA 3: Importar Download
 import { PlusCircle, Loader2, Edit, Trash2, Link, Clock, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import { getDbPaths } from '../../services/firebase.js';
 import CardTitle from '../ui/CardTitle.jsx';
@@ -11,14 +10,15 @@ import {
     ALL_FILTER_OPTION
 } from '../../utils/constants.js';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
-import * as XLSX from 'xlsx'; // TAREA 3: Importar XLSX
+import * as XLSX from 'xlsx'; 
 
 // Define Table Structure and MetaData
 const ACTIVITY_COLUMNS = [
     { labelKey: "activity.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
     { labelKey: "activity.col.type", key: "activityType", sortable: true, filterable: true, optionsKey: 'activityType', type: 'string' },
-    { labelKey: "activity.col.institution", key: "institution", sortable: true, filterable: true, type: 'string' },
-    { labelKey: "activity.col.tema", key: "tema", sortable: true, filterable: true, type: 'string' },
+    // --- MODIFICADO: Tipo ahora es 'array' ---
+    { labelKey: "activity.col.institution", key: "institution", sortable: true, filterable: true, type: 'array' },
+    { labelKey: "activity.col.tema", key: "tema", sortable: true, filterable: true, type: 'array' },
     { labelKey: "activity.col.mode", key: "meetingMode", sortable: true, filterable: true, optionsKey: 'meetingMode', type: 'string' },
     { labelKey: "activity.col.time", key: "timeSpent", sortable: true, filterable: true, type: 'number' },
     { labelKey: "activity.col.participants", key: "participants", sortable: false, filterable: false, type: 'string' },
@@ -35,7 +35,7 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// Simple Table Row Component for Activities
+// --- MODIFICADO: Renderizado de Fila de Tabla ---
 const ActivityTableRow = ({ item, onEdit, onDelete }) => {
     const isMeeting = item.activityType === 'meeting';
     
@@ -43,13 +43,17 @@ const ActivityTableRow = ({ item, onEdit, onDelete }) => {
     const meetingMode = isMeeting ? (item.meetingMode || 'N/A') : 'N/A';
     const timeSpent = isMeeting ? (item.timeSpent > 0 ? `${item.timeSpent} min` : '0 min') : 'N/A';
     const participants = isMeeting ? (item.participants || 'N/A') : 'N/A';
+
+    // --- MODIFICADO: Unir arrays para mostrar ---
+    const institutions = (Array.isArray(item.institution) ? item.institution : [item.institution || 'N/A']).join(', ');
+    const temas = (Array.isArray(item.tema) ? item.tema : [item.tema || 'N/A']).join(', ');
     
     return (
         <tr className="hover:bg-sky-900/60 transition-colors">
             <td className="px-6 py-2 text-sm font-medium text-white whitespace-nowrap">{item.date}</td>
             <td className="px-6 py-2 text-sm text-gray-400 capitalize">{item.activityType}</td>
-            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={item.institution}>{item.institution || 'N/A'}</td>
-            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={item.tema}>{item.tema || 'N/A'}</td>
+            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={institutions}>{institutions}</td>
+            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={temas}>{temas}</td>
             <td className={`px-6 py-2 text-sm ${isMeeting ? 'text-sky-400' : 'text-gray-600'}`}>{meetingMode}</td>
             <td className="px-6 py-2 text-sm text-gray-400">{timeSpent}</td>
             <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[120px]" title={participants}>{participants}</td>
@@ -109,13 +113,16 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
     if (column.filterable) {
         if (column.optionsKey) {
             options = filterOptions[column.optionsKey] || [];
-        } else {
+        } 
+        // --- MODIFICADO: No crear opciones únicas para campos de array ---
+        else if (column.type !== 'array') { 
             const uniqueValues = [...new Set(dataItems.map(item => String(item[column.key] || 'N/A')))];
             options = uniqueValues.filter(v => v !== 'N/A' && v !== '').sort();
         }
     }
     
-    const isTextInputFilter = !column.optionsKey || column.key === 'institution' || column.key === 'tema';
+    // --- MODIFICADO: 'institution' y 'tema' son tipo 'array', usar text input ---
+    const isTextInputFilter = !column.optionsKey || column.type === 'array';
     
     return (
         <th 
@@ -213,7 +220,7 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
     };
     
 
-    // 3. Data Filter/Sort Logic
+    // 3. Data Filter/Sort Logic (--- MODIFICADO ---)
     const filteredAndSortedItems = useMemo(() => {
         let finalData = activityItems.filter(item => {
             for (const column of ACTIVITY_COLUMNS) {
@@ -222,15 +229,19 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
                 
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
 
-                const itemValue = String(item[key] || '');
-                const targetValue = filterValue;
+                let itemValue = item[key];
+                const targetValue = filterValue.toLowerCase();
 
-                if (!column.optionsKey || column.key === 'institution' || column.key === 'tema') { 
-                    if (!itemValue.toLowerCase().includes(targetValue.toLowerCase())) {
-                        return false;
-                    }
-                } else if (itemValue !== targetValue) {
-                    return false;
+                // --- MODIFICADO: Lógica de filtro para 'array' ---
+                if (column.type === 'array') {
+                    itemValue = (Array.isArray(itemValue) ? itemValue : [itemValue || '']).join(', ').toLowerCase();
+                    if (!itemValue.includes(targetValue)) return false;
+                }
+                // --- Lógica existente ---
+                else if (column.optionsKey) { 
+                    if (String(itemValue) !== filterValue) return false;
+                } else {
+                    if (!String(itemValue || '').toLowerCase().includes(targetValue)) return false;
                 }
             }
             return true;
@@ -239,8 +250,17 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
         if (sort.key) {
             finalData.sort((a, b) => {
                 const column = ACTIVITY_COLUMNS.find(c => c.key === sort.key);
-                const aValue = a[sort.key] || (column?.type === 'number' ? -Infinity : '');
-                const bValue = b[sort.key] || (column?.type === 'number' ? -Infinity : '');
+                let aValue = a[sort.key];
+                let bValue = b[sort.key];
+
+                // --- MODIFICADO: Unir arrays para ordenar ---
+                if (column.type === 'array') {
+                    aValue = (Array.isArray(aValue) ? aValue : [aValue || '']).join(', ');
+                    bValue = (Array.isArray(bValue) ? bValue : [bValue || '']).join(', ');
+                } else {
+                    aValue = aValue || (column?.type === 'number' ? -Infinity : '');
+                    bValue = bValue || (column?.type === 'number' ? -Infinity : '');
+                }
                 
                 if (column?.type === 'number') {
                     return (sort.direction === 'asc' ? 1 : -1) * (aValue - bValue);
@@ -267,7 +287,7 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
         }));
     };
 
-    // TAREA 3: Nueva función de descarga XLSX
+    // TAREA 3: Nueva función de descarga XLSX (--- MODIFICADO ---)
     const handleDownloadXLSX = () => {
         const data = filteredAndSortedItems;
         const columns = ACTIVITY_COLUMNS;
@@ -278,18 +298,18 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
             return;
         }
 
-        // 1. Filtrar columnas (quitar 'actions')
-        const exportColumns = columns.filter(col => col.key !== 'actions');
-        
-        // 2. Crear los datos para la hoja
         const exportData = data.map(item => {
             let row = {};
             exportColumns.forEach(col => {
                 const header = t(col.labelKey); // Usar la etiqueta traducida como clave
                 let value = item[col.key] || '';
                 
+                // --- MODIFICADO: Unir arrays ---
+                if (col.key === 'institution' || col.key === 'tema') {
+                    value = (Array.isArray(value) ? value : [value]).join('; ');
+                }
                 // Limpiar datos N/A para campos de 'meeting'
-                if (col.key === 'timeSpent' && item.activityType !== 'meeting') {
+                else if (col.key === 'timeSpent' && item.activityType !== 'meeting') {
                     value = 'N/A';
                 } else if (col.key === 'meetingMode' && item.activityType !== 'meeting') {
                     value = 'N/A';
@@ -301,13 +321,13 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
             });
             return row;
         });
-
-        // 3. Crear la hoja de cálculo y el libro
+        
+        const exportColumns = columns.filter(col => col.key !== 'actions');
+        
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Data'); // Nombrar la pestaña "Data"
+        XLSX.utils.book_append_sheet(wb, ws, 'Data'); 
 
-        // 4. Escribir y descargar el archivo
         XLSX.writeFile(wb, filename);
     };
 
@@ -327,7 +347,6 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
             <div className="p-4 flex justify-between items-center bg-sky-900/70 border-b border-sky-700/50">
                 <h3 className="text-lg font-semibold text-white">{t('activity.records_title')} ({filteredAndSortedItems.length} items)</h3>
                 <div className="flex space-x-2">
-                    {/* TAREA 3: Añadido botón de descarga */}
                     <button
                         onClick={handleDownloadXLSX}
                         className="flex items-center space-x-2 bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition shadow-md"
@@ -337,7 +356,7 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
                         <span>{t('activity.download_xlsx')}</span> 
                     </button>
                     <button
-                        onClick={() => onOpenForm('activity')}
+                        onClick={() => onOpenForm(null)} // --- MODIFICADO: onOpenForm ahora solo necesita 1 argumento ---
                         className="flex items-center space-x-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 transition shadow-md"
                     >
                         <PlusCircle className="w-4 h-4" />
@@ -371,7 +390,7 @@ const ActivityLogTable = ({ db, onOpenForm }) => {
                                 <ActivityTableRow
                                     key={item.id}
                                     item={item}
-                                    onEdit={onOpenForm} 
+                                    onEdit={() => onOpenForm(item)} // --- MODIFICADO: onOpenForm ahora solo necesita 1 argumento ---
                                     onDelete={handleDelete}
                                 />
                             ))

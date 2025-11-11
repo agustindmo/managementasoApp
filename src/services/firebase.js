@@ -25,6 +25,7 @@ export const getDbPaths = () => {
         userRoles: `${adminBase}/userRoles`,       
         userProfiles: `${adminBase}/userProfiles`,
         pressLog: `${adminBase}/pressLog`,
+        mediaStakeholders: `${adminBase}/mediaStakeholders`,
 
         // TAREA 10: Nueva ruta para Solicitudes de Miembros
         memberRequests: `${adminBase}/memberRequests`,
@@ -43,5 +44,8 @@ export const getDbPaths = () => {
 
         // TAREA 7 (Nueva): Ruta para Proveedores
         financeProviders: `${adminBase}/financeProviders`,
+
+        // --- NUEVA RUTA ---
+        financePartners: `${adminBase}/financePartners`,
     };
 };

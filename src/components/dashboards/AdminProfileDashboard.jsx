@@ -1,27 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue } from 'firebase/database';
-import { Loader2, Users, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Users, ArrowUp, ArrowDown, Building, Contact, Home } from 'lucide-react'; // Import new icons
 import { getDbPaths } from '../../services/firebase.js';
 import CardTitle from '../ui/CardTitle.jsx';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import { 
     ALL_FILTER_OPTION, 
-    PROFILE_TABLE_COLUMNS,
+    // Importar las nuevas constantes de columna
+    MEMBERS_PROFILE_TABLE_COLUMNS,
+    FARMS_PROFILE_TABLE_COLUMNS,
+    CONTACTS_PROFILE_TABLE_COLUMNS,
     PROFILE_COLUMN_OPTIONS_MAP
 } from '../../utils/constants.js';
 
-// Convertir snapshot de perfiles
-const snapshotToArray = (snapshot) => {
-    if (!snapshot.exists()) return [];
-    const val = snapshot.val();
-    // El 'id' (UID del usuario) es la clave del objeto
-    return Object.keys(val).map(key => ({
-        id: key,
-        ...val[key],
-    }));
-};
+// --- Componente de Botón de Pestaña (Copiado de otros dashboards) ---
+const TabButton = ({ isActive, onClick, children, icon: Icon }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center space-x-2 px-4 py-2 text-sm font-semibold transition-all duration-300 rounded-lg 
+            ${isActive 
+                ? 'bg-sky-700 text-white shadow-md' 
+                : 'text-gray-400 hover:bg-black/50 hover:text-white'
+            }`
+        }
+    >
+        <Icon className="w-4 h-4" />
+        <span>{children}</span>
+    </button>
+);
 
-// Componente de cabecera de tabla
+
+// --- Cabecera de la Tabla Genérica ---
 const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, t }) => {
     const label = t(column.labelKey); 
     
@@ -33,11 +42,7 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
          options = filterOptions[column.optionsKey] || [];
     }
     
-    // TAREA 2: Actualizado - 'contacts_array', 'farms_array' y 'cert_array' no son inputs de texto
-    const isTextInputFilter = !column.optionsKey && 
-                              column.type !== 'contacts_array' && 
-                              column.type !== 'farms_array' && 
-                              column.type !== 'cert_array';
+    const isTextInputFilter = !column.optionsKey;
 
     return (
         <th 
@@ -58,15 +63,13 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
                 {column.filterable && (
                     isTextInputFilter ? (
                          <input
-                            type="text"
+                            type={column.type === 'number' ? 'number' : 'text'}
                             placeholder={`${t('policy.search')} ${label}`}
                             value={currentFilters[column.key] || ''}
                             onChange={(e) => onFilterChange(column.key, e.target.value)}
                             className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[100px]"
                         />
                     ) : (
-                        // Renderizar select para filtros con optionsKey (excluyendo tipos de array complejos)
-                        column.optionsKey &&
                         <select
                             value={currentFilters[column.key] || ALL_FILTER_OPTION}
                             onChange={(e) => onFilterChange(column.key, e.target.value)}
@@ -75,7 +78,6 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
                             <option value={ALL_FILTER_OPTION} className="bg-sky-900">{ALL_FILTER_OPTION}</option>
                             {options.map(option => (
                                 <option key={option} value={option} className="bg-sky-900">
-                                    {/* Manejar traducción simple para 'Yes'/'No' */}
                                     {column.optionsKey === 'boolean' ? t(option === 'Yes' ? 'profile.yes' : 'profile.no') : option}
                                 </option>
                             ))}
@@ -90,12 +92,21 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 
 const AdminProfileDashboard = ({ db }) => {
     const { t } = useTranslation();
-    const [userProfiles, setUserProfiles] = useState([]);
+    const [userProfiles, setUserProfiles] = useState([]); // Datos base
     const [isLoading, setIsLoading] = useState(true);
-    const [filters, setFilters] = useState({});
-    const [sort, setSort] = useState({ key: 'company', direction: 'asc' });
+    const [activeTab, setActiveTab] = useState('members');
 
-    // 1. Cargar todos los perfiles de usuario
+    // --- Estados de Filtro y Orden para cada Pestaña ---
+    const [memberFilters, setMemberFilters] = useState({});
+    const [memberSort, setMemberSort] = useState({ key: 'company', direction: 'asc' });
+    
+    const [farmFilters, setFarmFilters] = useState({});
+    const [farmSort, setFarmSort] = useState({ key: 'company', direction: 'asc' });
+
+    const [contactFilters, setContactFilters] = useState({});
+    const [contactSort, setContactSort] = useState({ key: 'company', direction: 'asc' });
+
+    // 1. Cargar todos los perfiles de usuario (incluyendo email)
     useEffect(() => {
         if (!db) {
             setIsLoading(true);
@@ -106,21 +117,20 @@ const AdminProfileDashboard = ({ db }) => {
         
         const unsubscribe = onValue(profilesRef, (snapshot) => {
             try {
-                // TAREA 2: Mapear 'email' desde la clave (UID) al objeto
-                // Asumimos que los 'userRoles' tienen el email, y los 'userProfiles' están bajo el UID
                 const profilesSnap = snapshot.val() || {};
                 
+                // Cargar roles para obtener emails
                 const rolesRef = ref(db, getDbPaths().userRoles);
                 onValue(rolesRef, (rolesSnapshot) => {
                     const rolesVal = rolesSnapshot.val() || {};
                     const profiles = Object.keys(profilesSnap).map(uid => ({
                         id: uid,
-                        email: rolesVal[uid]?.email || 'N/A', // Añadir email desde userRoles
+                        email: rolesVal[uid]?.email || 'N/A', 
                         ...profilesSnap[uid],
                     }));
                     setUserProfiles(profiles);
                     setIsLoading(false);
-                });
+                }, { onlyOnce: true }); // Solo necesitamos los roles una vez
 
             } catch (e) {
                 console.error("Error processing user profiles snapshot:", e);
@@ -134,33 +144,41 @@ const AdminProfileDashboard = ({ db }) => {
         return () => unsubscribe();
     }, [db]);
 
-    // 2. Lógica de filtro y orden
-    const filteredAndSortedProfiles = useMemo(() => {
+    // 2. Aplanar datos para Pestañas de Fincas y Contactos
+    const flattenedFarms = useMemo(() => {
+        return userProfiles.flatMap(p => 
+            (p.farms || []).map(f => ({
+                ...f,
+                company: p.company || p.email, // Usar compañía o email como referencia
+                profileId: p.id
+            }))
+        );
+    }, [userProfiles]);
+
+    const flattenedContacts = useMemo(() => {
+         return userProfiles.flatMap(p => 
+            (p.contacts || []).map(c => ({
+                ...c,
+                company: p.company || p.email,
+                profileId: p.id
+            }))
+        );
+    }, [userProfiles]);
+
+
+    // 3. Lógica de filtro y orden para CADA pestaña
+    
+    // Miembros
+    const filteredAndSortedMembers = useMemo(() => {
         let finalData = userProfiles.filter(item => {
-            for (const column of PROFILE_TABLE_COLUMNS) {
+            for (const column of MEMBERS_PROFILE_TABLE_COLUMNS) {
                 const key = column.key;
-                const filterValue = filters[key];
-                
+                const filterValue = memberFilters[key];
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
-
                 let itemValue = item[key];
-                
-                if (column.type === 'boolean') {
-                    itemValue = itemValue ? "Yes" : "No";
-                }
-                // TAREA 2: Lógica de filtro actualizada para arrays de objetos
-                else if (column.type === 'cert_array') {
-                    itemValue = (itemValue || []).map(c => c.name).join(', ');
-                }
-                else if (column.type === 'contacts_array') {
-                    itemValue = (itemValue || []).map(c => `${c.contact_name} ${c.contact_email} ${c.contact_area}`).join(', ');
-                }
-                else if (column.type === 'farms_array') {
-                    itemValue = (itemValue || []).map(f => `${f.province} ${f.city}`).join(', ');
-                }
-
+                if (column.type === 'boolean') itemValue = itemValue ? "Yes" : "No";
+                else if (column.type === 'cert_array') itemValue = (itemValue || []).map(c => c.name).join(', ');
                 itemValue = String(itemValue || '');
-
                 if (column.optionsKey) {
                     if (itemValue !== filterValue) return false;
                 } else {
@@ -169,55 +187,88 @@ const AdminProfileDashboard = ({ db }) => {
             }
             return true;
         });
-
-        if (sort.key) {
+        if (memberSort.key) {
             finalData.sort((a, b) => {
-                const aValue = a[sort.key] || '';
-                const bValue = b[sort.key] || '';
-                return (sort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
+                const aValue = a[memberSort.key] || '';
+                const bValue = b[memberSort.key] || '';
+                return (memberSort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
             });
         }
-        
         return finalData;
-    }, [userProfiles, filters, sort]);
+    }, [userProfiles, memberFilters, memberSort]);
 
-    const handleSortChange = (key) => {
-        setSort(prev => ({
-            key,
-            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
-        }));
-    };
-
-    const handleFilterChange = (key, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    };
-
-    // TAREA 2: Helper para renderizar celdas actualizado
-    const renderCellContent = (item, col) => {
-        const value = item[col.key];
-        
-        if (col.type === 'boolean') {
-            return value ? 
-                <span className="text-green-400">{t('profile.yes')}</span> : 
-                <span className="text-gray-500">{t('profile.no')}</span>;
+    // Fincas
+    const filteredAndSortedFarms = useMemo(() => {
+        let finalData = flattenedFarms.filter(item => {
+            for (const column of FARMS_PROFILE_TABLE_COLUMNS) {
+                const key = column.key;
+                const filterValue = farmFilters[key];
+                if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
+                let itemValue = item[key];
+                itemValue = String(itemValue || '');
+                if (column.optionsKey) {
+                    if (itemValue !== filterValue) return false;
+                } else {
+                    if (!itemValue.toLowerCase().includes(filterValue.toLowerCase())) return false;
+                }
+            }
+            return true;
+        });
+        if (farmSort.key) {
+            finalData.sort((a, b) => {
+                const aValue = a[farmSort.key] || (a[farmSort.key] === 0 ? 0 : '');
+                const bValue = b[farmSort.key] || (b[farmSort.key] === 0 ? 0 : '');
+                if (typeof aValue === 'number' && typeof bValue === 'number') {
+                     return (farmSort.direction === 'asc' ? 1 : -1) * (aValue - bValue);
+                }
+                return (farmSort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
+            });
         }
+        return finalData;
+    }, [flattenedFarms, farmFilters, farmSort]);
+
+    // Contactos
+    const filteredAndSortedContacts = useMemo(() => {
+        let finalData = flattenedContacts.filter(item => {
+            for (const column of CONTACTS_PROFILE_TABLE_COLUMNS) {
+                const key = column.key;
+                const filterValue = contactFilters[key];
+                if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
+                let itemValue = item[key];
+                itemValue = String(itemValue || '');
+                if (column.optionsKey) {
+                    if (itemValue !== filterValue) return false;
+                } else {
+                    if (!itemValue.toLowerCase().includes(filterValue.toLowerCase())) return false;
+                }
+            }
+            return true;
+        });
+        if (contactSort.key) {
+            finalData.sort((a, b) => {
+                const aValue = a[contactSort.key] || '';
+                const bValue = b[contactSort.key] || '';
+                return (contactSort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
+            });
+        }
+        return finalData;
+    }, [flattenedContacts, contactFilters, contactSort]);
+
+
+    // Helper para renderizar celda de certificaciones
+    const renderCertCell = (item, col) => {
+        const value = item[col.key];
         if (col.type === 'cert_array') {
             return (value || []).map(c => `${c.name} (${c.hectares || 0} ha)`).join('; ');
         }
-        if (col.type === 'contacts_array') {
-            return (value || []).map(c => `${c.contact_name} (${c.contact_area})`).join('; ');
-        }
-        if (col.type === 'farms_array') {
-            return (value || []).map(f => `${f.city}, ${f.province} (${f.hectares || 0} ha, ${f.workers || 0} pp)`)
-                                .join('; ');
+        if (col.type === 'boolean') {
+            return value ? <span className="text-green-400">{t('profile.yes')}</span> : <span className="text-gray-500">{t('profile.no')}</span>;
         }
         return String(value || '');
     };
 
-    // 3. Render Logic
+
+    // 4. Render Logic
     if (isLoading) {
         return (
             <div className="flex justify-center items-center p-8">
@@ -227,6 +278,132 @@ const AdminProfileDashboard = ({ db }) => {
         );
     }
     
+    // Función para renderizar la tabla activa
+    const renderActiveTable = () => {
+        switch(activeTab) {
+            case 'members':
+                return (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-sky-800/50">
+                            <thead className="bg-sky-900/70">
+                                <tr>
+                                    {MEMBERS_PROFILE_TABLE_COLUMNS.map(column => (
+                                        <TableHeaderWithControls
+                                            key={column.key}
+                                            column={column}
+                                            currentSort={memberSort}
+                                            onSortChange={(key) => setMemberSort(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }))}
+                                            onFilterChange={(key, value) => setMemberFilters(prev => ({ ...prev, [key]: value }))}
+                                            filterOptions={PROFILE_COLUMN_OPTIONS_MAP}
+                                            currentFilters={memberFilters}
+                                            t={t}
+                                        />
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
+                                {filteredAndSortedMembers.length > 0 ? (
+                                    filteredAndSortedMembers.map(item => (
+                                        <tr key={item.id} className="hover:bg-sky-900/60 transition-colors">
+                                            {MEMBERS_PROFILE_TABLE_COLUMNS.map(col => (
+                                                <td 
+                                                    key={col.key} 
+                                                    className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[200px] truncate"
+                                                    title={renderCertCell(item, col)}
+                                                >
+                                                    {renderCertCell(item, col)}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan={MEMBERS_PROFILE_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-gray-500">{t('profile.no_profiles')}</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            case 'farms':
+                 return (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-sky-800/50">
+                            <thead className="bg-sky-900/70">
+                                <tr>
+                                    {FARMS_PROFILE_TABLE_COLUMNS.map(column => (
+                                        <TableHeaderWithControls
+                                            key={column.key}
+                                            column={column}
+                                            currentSort={farmSort}
+                                            onSortChange={(key) => setFarmSort(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }))}
+                                            onFilterChange={(key, value) => setFarmFilters(prev => ({ ...prev, [key]: value }))}
+                                            filterOptions={PROFILE_COLUMN_OPTIONS_MAP}
+                                            currentFilters={farmFilters}
+                                            t={t}
+                                        />
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
+                                {filteredAndSortedFarms.length > 0 ? (
+                                    filteredAndSortedFarms.map((item, index) => (
+                                        <tr key={item.profileId + index} className="hover:bg-sky-900/60 transition-colors">
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[200px] truncate" title={item.company}>{item.company}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[150px] truncate" title={item.province}>{item.province}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[150px] truncate" title={item.city}>{item.city}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap" title={item.hectares}>{item.hectares || 0}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap" title={item.workers}>{item.workers || 0}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan={FARMS_PROFILE_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-gray-500">{t('profile.no_farms')}</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            case 'contacts':
+                 return (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-sky-800/50">
+                            <thead className="bg-sky-900/70">
+                                <tr>
+                                    {CONTACTS_PROFILE_TABLE_COLUMNS.map(column => (
+                                        <TableHeaderWithControls
+                                            key={column.key}
+                                            column={column}
+                                            currentSort={contactSort}
+                                            onSortChange={(key) => setContactSort(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }))}
+                                            onFilterChange={(key, value) => setContactFilters(prev => ({ ...prev, [key]: value }))}
+                                            filterOptions={PROFILE_COLUMN_OPTIONS_MAP}
+                                            currentFilters={contactFilters}
+                                            t={t}
+                                        />
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
+                                {filteredAndSortedContacts.length > 0 ? (
+                                    filteredAndSortedContacts.map((item, index) => (
+                                        <tr key={item.profileId + index} className="hover:bg-sky-900/60 transition-colors">
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[200px] truncate" title={item.company}>{item.company}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[150px] truncate" title={item.contact_name}>{item.contact_name}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[200px] truncate" title={item.contact_email}>{item.contact_email}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[150px] truncate" title={item.contact_phone}>{item.contact_phone}</td>
+                                            <td className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[150px] truncate" title={item.contact_area}>{item.contact_area}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan={CONTACTS_PROFILE_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-gray-500">{t('profile.no_contacts')}</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    }
+
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <h1 className="text-3xl font-bold text-white mb-6 flex items-center">
@@ -234,48 +411,35 @@ const AdminProfileDashboard = ({ db }) => {
                 {t('profile.admin_title')}
             </h1>
             
+            {/* Contenedor de Pestañas */}
+            <div className="mb-6 p-2 rounded-xl border border-sky-700/50 bg-black/40 backdrop-blur-lg flex flex-wrap gap-2">
+                <TabButton
+                    isActive={activeTab === 'members'}
+                    onClick={() => setActiveTab('members')}
+                    icon={Building}
+                >
+                    {t('profile.tab.members')} ({filteredAndSortedMembers.length})
+                </TabButton>
+                <TabButton
+                    isActive={activeTab === 'farms'}
+                    onClick={() => setActiveTab('farms')}
+                    icon={Home}
+                >
+                    {t('profile.tab.farms')} ({filteredAndSortedFarms.length})
+                </TabButton>
+                <TabButton
+                    isActive={activeTab === 'contacts'}
+                    onClick={() => setActiveTab('contacts')}
+                    icon={Contact}
+                >
+                    {t('profile.tab.contacts')} ({filteredAndSortedContacts.length})
+                </TabButton>
+            </div>
+
+            {/* Contenedor de la Tabla Activa */}
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-                <CardTitle title={`${t('profile.admin_records_title')} (${filteredAndSortedProfiles.length})`} icon={Users} />
-                
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-sky-800/50">
-                        <thead className="bg-sky-900/70">
-                            <tr>
-                                {PROFILE_TABLE_COLUMNS.map(column => (
-                                    <TableHeaderWithControls
-                                        key={column.key}
-                                        column={column}
-                                        currentSort={sort}
-                                        onSortChange={handleSortChange}
-                                        onFilterChange={handleFilterChange}
-                                        filterOptions={PROFILE_COLUMN_OPTIONS_MAP}
-                                        currentFilters={filters}
-                                        t={t}
-                                    />
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
-                            {filteredAndSortedProfiles.length > 0 ? (
-                                filteredAndSortedProfiles.map(item => (
-                                    <tr key={item.id} className="hover:bg-sky-900/60 transition-colors">
-                                        {PROFILE_TABLE_COLUMNS.map(col => (
-                                            <td 
-                                                key={col.key} 
-                                                className="px-6 py-2 text-sm text-gray-300 whitespace-nowrap max-w-[200px] truncate"
-                                                title={renderCellContent(item, col)}
-                                            >
-                                                {renderCellContent(item, col)}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr><td colSpan={PROFILE_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-gray-500">{t('profile.no_profiles')}</td></tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                {/* El CardTitle se renderiza dentro de la función de renderizado de tabla */}
+                {renderActiveTable()}
             </div>
         </div>
     );

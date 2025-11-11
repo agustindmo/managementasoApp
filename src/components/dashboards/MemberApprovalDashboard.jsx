@@ -1,8 +1,8 @@
 // src/components/dashboards/MemberApprovalDashboard.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ref, onValue, update, set } from 'firebase/database';
-import { Loader2, UserCheck, Check, X } from 'lucide-react';
+import { ref, onValue, update, set, serverTimestamp } from 'firebase/database'; // Import set
+import { Loader2, UserCheck, Check, X, Link as LinkIcon } from 'lucide-react'; // Import LinkIcon
 import { getDbPaths } from '../../services/firebase.js';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import CardTitle from '../ui/CardTitle.jsx';
@@ -17,11 +17,28 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
+// Helper para renderizar listas de array (CORREGIDO)
+const RenderArray = ({ items }) => {
+    // *** CORRECCIÓN: Comprobar si es un array antes de usar .length o .map ***
+    if (!Array.isArray(items) || items.length === 0) {
+        return <span className="text-gray-500">N/A</span>;
+    }
+    
+    return (
+        <ul className="text-xs list-disc list-inside">
+            {items.map((item, index) => (
+                <li key={index} className="truncate" title={item}>{item}</li>
+            ))}
+        </ul>
+    );
+};
+
 const MemberApprovalDashboard = ({ db, userId }) => { 
     const { t } = useTranslation();
     const [requests, setRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [votingId, setVotingId] = useState(null); // Para deshabilitar botones durante el voto
 
     // 1. Cargar solicitudes de miembros
     useEffect(() => {
@@ -50,53 +67,31 @@ const MemberApprovalDashboard = ({ db, userId }) => {
 
     // 2. Filtrar solicitudes pendientes
     const pendingRequests = useMemo(() => {
-        return requests.filter(r => r.status === 'pending_director_approval');
-    }, [requests]);
+        return requests.filter(r => 
+            r.status === 'pending_director_approval' &&
+            (!r.votes || !r.votes[userId]) // Ocultar si ya existe un voto de este director
+        );
+    }, [requests, userId]);
     
-    // 3. Handlers para Aprobar/Rechazar
-    const handleRequestAction = async (request, newStatus) => {
-        if (!db) return;
+    // 3. Handlers para Votar
+    const handleVoteAction = async (request, vote) => {
+        if (!db || !userId) return;
+        
+        setVotingId(request.id); // Deshabilitar botones para esta fila
         
         try {
-            const requestRef = ref(db, `${getDbPaths().memberRequests}/${request.id}`);
+            const voteRef = ref(db, `${getDbPaths().memberRequests}/${request.id}/votes/${userId}`);
             
-            // Actualizar el estado de la solicitud
-            await update(requestRef, {
-                status: newStatus,
-                reviewedBy: userId,
-                reviewedAt: serverTimestamp()
+            await set(voteRef, {
+                vote: vote,
+                votedAt: serverTimestamp()
             });
-
-            // Si se aprueba, crear el perfil de usuario
-            if (newStatus === 'approved') {
-                const profileRef = ref(db, `${getDbPaths().userProfiles}/${request.id}`);
-                
-                // Crear un nuevo perfil de miembro basado en la solicitud
-                // Omitimos los campos de estado y de admin
-                const { 
-                    status, 
-                    createdBy, 
-                    createdAt,
-                    reviewedBy,
-                    reviewedAt, 
-                    ...profileData 
-                } = request;
-
-                await set(profileRef, {
-                    ...profileData,
-                    member_since: serverTimestamp(),
-                    // Inicializar los campos que faltan en el perfil
-                    contacts: [],
-                    farms: [],
-                    export_certifications: [],
-                    farm_certifications: [],
-                });
-            }
-            // Si se rechaza, no se hace nada más que actualizar el estado.
             
         } catch (e) {
-            console.error(`Error ${newStatus} member request:`, e);
+            console.error(`Error casting vote:`, e);
             setError(t('member_request.director.action_fail'));
+        } finally {
+            setVotingId(null); // Rehabilitar botones
         }
     };
 
@@ -114,6 +109,22 @@ const MemberApprovalDashboard = ({ db, userId }) => {
         return <div className="p-4 text-center text-red-400 bg-red-900/50 border border-red-700 rounded-lg">{error}</div>;
     }
 
+    // --- Definir todas las cabeceras de la tabla ---
+    const tableHeaders = [
+        t('member_request.col.company_name'),
+        t('member_request.col.commercial_name'),
+        t('member_request.col.legal_rep'),
+        t('member_request.col.ceo'),
+        t('member_request.col.partners'),
+        t('member_request.col.activity'),
+        t('member_request.col.country'),
+        t('member_request.col.province'),
+        t('member_request.col.city'),
+        t('member_request.col.commercial_refs'),
+        t('member_request.col.risk'),
+        t('admin.actions')
+    ];
+
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <h1 className="text-3xl font-bold text-white mb-6 flex items-center">
@@ -127,53 +138,74 @@ const MemberApprovalDashboard = ({ db, userId }) => {
                     <table className="min-w-full divide-y divide-sky-800/50">
                         <thead className="bg-sky-900/70">
                             <tr>
-                                {[
-                                    t('member_request.col.company_name'),
-                                    t('member_request.col.activity'),
-                                    t('member_request.col.province'),
-                                    t('member_request.col.risk'),
-                                    t('admin.actions')
-                                ].map(header => (
+                                {tableHeaders.map(header => (
                                     <th key={header} className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{header}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
                             {pendingRequests.length > 0 ? (
-                                pendingRequests.map(req => (
-                                    <tr key={req.id} className="hover:bg-sky-900/60 transition-colors">
-                                        <td className="px-6 py-4 text-sm font-medium text-white">{req.company_name}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-400">{req.activity}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-400">{req.province}</td>
-                                        <td className="px-6 py-4 text-sm font-semibold capitalize">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs ${
-                                                req.risk_status === 'High' ? 'bg-red-900/50 text-red-300' :
-                                                req.risk_status === 'Medium' ? 'bg-yellow-900/50 text-yellow-300' :
-                                                'bg-green-900/50 text-green-300'
-                                            }`}>
-                                                {t(`member_request.risk_opts.${req.risk_status.toLowerCase()}`)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex space-x-3 justify-end">
-                                                <button
-                                                    onClick={() => handleRequestAction(req, 'approved')}
-                                                    className="flex items-center text-green-400 hover:text-green-200 p-1 rounded-full hover:bg-green-800/50 transition"
-                                                >
-                                                    <Check className="w-4 h-4 mr-1" /> {t('admin.approve')}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleRequestAction(req, 'rejected')}
-                                                    className="flex items-center text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
-                                                >
-                                                    <X className="w-4 h-4 mr-1" /> {t('admin.reject')}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                pendingRequests.map(req => {
+                                    const isVoting = votingId === req.id;
+                                    return (
+                                        <tr key={req.id} className="hover:bg-sky-900/60 transition-colors">
+                                            {/* Company Info */}
+                                            <td className="px-6 py-4 text-sm font-medium text-white" title={req.company_name}>{req.company_name}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-400" title={req.commercial_name}>{req.commercial_name || 'N/A'}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-400" title={req.legal_rep}>{req.legal_rep || 'N/A'}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-400" title={req.ceo}>{req.ceo || 'N/A'}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-400"><RenderArray items={req.partners} /></td>
+                                            
+                                            {/* Activity & Location */}
+                                            <td className="px-6 py-4 text-sm text-gray-400">{req.activity}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-400">{req.country}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-400">{req.country === 'Ecuador' ? req.province : 'N/A'}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-400">{req.country === 'Ecuador' ? req.city : 'N/A'}</td>
+
+                                            {/* Refs & Risk */}
+                                            <td className="px-6 py-4 text-sm text-gray-400"><RenderArray items={req.commercial_refs} /></td>
+                                            <td className="px-6 py-4 text-sm font-semibold capitalize">
+                                                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                                                    req.risk_status === 'High' ? 'bg-red-900/50 text-red-300' :
+                                                    req.risk_status === 'Medium' ? 'bg-yellow-900/50 text-yellow-300' :
+                                                    'bg-green-900/50 text-green-300'
+                                                }`}>
+                                                    {t(`member_request.risk_opts.${req.risk_status.toLowerCase()}`)}
+                                                </span>
+                                                {req.risk_link && (
+                                                    <a href={req.risk_link} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs text-blue-400 hover:text-blue-300 mt-1">
+                                                        <LinkIcon className="w-3 h-3 mr-1" />
+                                                        {t('member_request.col.risk_link')} 
+                                                    </a>
+                                                )}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex space-x-3 justify-end">
+                                                    <button
+                                                        onClick={() => handleVoteAction(req, 'approved')}
+                                                        disabled={isVoting}
+                                                        className="flex items-center text-green-400 hover:text-green-200 p-1 rounded-full hover:bg-green-800/50 transition disabled:opacity-50"
+                                                    >
+                                                        {isVoting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                                                        {t('admin.approve')}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleVoteAction(req, 'rejected')}
+                                                        disabled={isVoting}
+                                                        className="flex items-center text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition disabled:opacity-50"
+                                                    >
+                                                        {isVoting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4 mr-1" />}
+                                                        {t('admin.reject')}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
-                                <tr><td colSpan="5" className="px-6 py-4 text-center text-gray-500">{t('member_request.director.no_pending')}</td></tr>
+                                <tr><td colSpan={tableHeaders.length} className="px-6 py-4 text-center text-gray-500">{t('member_request.director.no_pending')}</td></tr>
                             )}
                         </tbody>
                     </table>

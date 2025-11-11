@@ -11,8 +11,9 @@ import {
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClose }) => {
+const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClose, role }) => { // <-- role prop
     const { t } = useTranslation();
+    const isAdmin = role === 'admin'; // <-- Check role
     
     const [formData, setFormData] = useState(initialData || INITIAL_AUDIT_STATE);
     const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +37,7 @@ const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClos
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!isReady) return; 
+        if (!isReady || !isAdmin) return; // <-- Check admin
 
         setIsLoading(true);
         setMessage('');
@@ -90,6 +91,7 @@ const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClos
                         name="auditor" 
                         value={String(formData.auditor ?? '')} 
                         onChange={handleChange} 
+                        disabled={!isAdmin} // <-- Disable
                     />
                     <InputField 
                         label={t('finance.audits.col.startDate')} 
@@ -97,6 +99,7 @@ const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClos
                         type="date" 
                         value={String(formData.startDate ?? '')} 
                         onChange={handleChange} 
+                        disabled={!isAdmin} // <-- Disable
                     />
                     <InputField 
                         label={t('finance.audits.col.endDate')} 
@@ -104,6 +107,7 @@ const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClos
                         type="date" 
                         value={String(formData.endDate ?? '')} 
                         onChange={handleChange} 
+                        disabled={!isAdmin} // <-- Disable
                     />
                 </div>
 
@@ -113,6 +117,7 @@ const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClos
                     value={String(formData.goals ?? '')} 
                     onChange={handleChange} 
                     rows={3}
+                    disabled={!isAdmin} // <-- Disable
                 />
 
                 <InputField 
@@ -121,6 +126,7 @@ const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClos
                     value={String(formData.results ?? '')} 
                     onChange={handleChange} 
                     rows={3}
+                    disabled={!isAdmin} // <-- Disable
                 />
                 
                 <InputField 
@@ -129,17 +135,21 @@ const FinanceAuditForm = ({ userId, db, mode = 'add', initialData = null, onClos
                     value={String(formData.observations ?? '')} 
                     onChange={handleChange} 
                     rows={3}
+                    disabled={!isAdmin} // <-- Disable
                 />
 
-                <button
-                    type="submit"
-                    disabled={isLoading || !isReady}
-                    className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                        isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
-                    }`}
-                >
-                    {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
-                </button>
+                {/* --- MODIFICADO: Condicional para botón "Submit" --- */}
+                {isAdmin && (
+                    <button
+                        type="submit"
+                        disabled={isLoading || !isReady}
+                        className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
+                            isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
+                        }`}
+                    >
+                        {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
+                    </button>
+                )}
                 {message && (
                     <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
                         {message}

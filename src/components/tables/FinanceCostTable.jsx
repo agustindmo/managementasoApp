@@ -29,7 +29,7 @@ const formatCurrency = (value) => {
 };
 
 // --- Fila de la Tabla ---
-const CostTableRow = ({ item, onEdit, onDelete, t }) => {
+const CostTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => { // <-- isAdmin prop
     return (
         <tr className="hover:bg-sky-900/60 transition-colors">
             <td className="px-6 py-3 text-sm font-medium text-white whitespace-nowrap">{item.date}</td>
@@ -37,22 +37,25 @@ const CostTableRow = ({ item, onEdit, onDelete, t }) => {
             <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[300px]" title={item.description}>{item.description}</td>
             <td className="px-6 py-3 text-sm text-green-400 font-semibold">{formatCurrency(item.amount)}</td>
             <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex space-x-2 justify-end">
-                    <button
-                        onClick={onEdit}
-                        className="text-sky-400 hover:text-sky-200 p-1 rounded-full hover:bg-sky-800/50 transition"
-                        title={t('activity.form.edit_title')}
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={onDelete}
-                        className="text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
-                        title={t('admin.reject')}
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                {/* --- MODIFICADO: Condicional para botones --- */}
+                {isAdmin && (
+                    <div className="flex space-x-2 justify-end">
+                        <button
+                            onClick={onEdit}
+                            className="text-sky-400 hover:text-sky-200 p-1 rounded-full hover:bg-sky-800/50 transition"
+                            title={t('activity.form.edit_title')}
+                        >
+                            <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={onDelete}
+                            className="text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
+                            title={t('admin.reject')}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
             </td>
         </tr>
     );
@@ -121,8 +124,9 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 
 
 // --- Componente Principal de la Tabla ---
-const FinanceCostTable = ({ db, onOpenForm, costType }) => {
+const FinanceCostTable = ({ db, onOpenForm, costType, role }) => { // <-- role prop
     const { t } = useTranslation(); 
+    const isAdmin = role === 'admin'; // <-- Check role
     
     // Determinar qué constantes usar
     const isAdmintype = costType === 'admin';
@@ -192,7 +196,7 @@ const FinanceCostTable = ({ db, onOpenForm, costType }) => {
 
     // Handler para eliminar
     const handleDelete = async (id) => {
-        if (db && window.confirm(t('policy.confirm_delete'))) { 
+        if (db && isAdmin && window.confirm(t('policy.confirm_delete'))) { // <-- Check admin
             try {
                 const itemRef = ref(db, `${getDbPaths()[dbPathKey]}/${id}`);
                 await remove(itemRef); 
@@ -264,14 +268,17 @@ const FinanceCostTable = ({ db, onOpenForm, costType }) => {
                         <Download className="w-4 h-4" />
                         <span>{t('policy.download_xlsx')}</span> 
                     </button>
-                    <button
-                        onClick={() => onOpenForm(null)}
-                        className="flex items-center space-x-2 bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition shadow-md"
-                        title={t(addKey)}
-                    >
-                        <PlusCircle className="w-4 h-4" />
-                        <span>{t(addKey)}</span>
-                    </button>
+                    {/* --- MODIFICADO: Condicional para botón "Add" --- */}
+                    {isAdmin && (
+                        <button
+                            onClick={() => onOpenForm(null)}
+                            className="flex items-center space-x-2 bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition shadow-md"
+                            title={t(addKey)}
+                        >
+                            <PlusCircle className="w-4 h-4" />
+                            <span>{t(addKey)}</span>
+                        </button>
+                    )}
                 </div>
             </div>
             
@@ -302,6 +309,7 @@ const FinanceCostTable = ({ db, onOpenForm, costType }) => {
                                     onEdit={() => onOpenForm(item)} 
                                     onDelete={() => handleDelete(item.id)} 
                                     t={t}
+                                    isAdmin={isAdmin} // <-- Pass prop
                                 />
                             ))
                         ) : (

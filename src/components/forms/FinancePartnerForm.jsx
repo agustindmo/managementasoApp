@@ -1,52 +1,45 @@
-// src/components/forms/FinanceCostForm.jsx
+// src/components/forms/FinancePartnerForm.jsx
 
 import React, { useState } from 'react';
 import { ref, set, push, serverTimestamp } from 'firebase/database';
-import { DollarSign, X, Loader2 } from 'lucide-react';
+import { Handshake, X, Loader2 } from 'lucide-react';
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import SelectField from '../ui/SelectField.jsx';
 import { 
-    INITIAL_COST_STATE_ADMIN,
-    INITIAL_COST_STATE_NON_OP,
-    COST_CATEGORIES_ADMIN,
-    COST_CATEGORIES_NON_OP
+    INITIAL_PARTNER_STATE,
+    PARTNER_AREA_OPTIONS
 } from '../../utils/constants.js'; 
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-const FinanceCostForm = ({ userId, db, mode = 'add', initialData = null, onClose, costType, role }) => { // <-- role prop
+const FinancePartnerForm = ({ userId, db, mode = 'add', initialData = null, onClose, role }) => {
     const { t } = useTranslation();
-    const isAdmin = role === 'admin'; // <-- Check role
+    const isAdmin = role === 'admin';
     
-    // Determinar qué constantes usar
-    const isAdmintype = costType === 'admin';
-    const initialFormState = isAdmintype ? INITIAL_COST_STATE_ADMIN : INITIAL_COST_STATE_NON_OP;
-    const categoryOptions = isAdmintype ? COST_CATEGORIES_ADMIN : COST_CATEGORIES_NON_OP;
-    const dbPathKey = isAdmintype ? 'financeAdminCosts' : 'financeNonOpCosts';
-    
-    const [formData, setFormData] = useState(initialData || initialFormState);
+    const [formData, setFormData] = useState(initialData || INITIAL_PARTNER_STATE);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
 
     const isReady = !!db && !!userId;
+    const dbPathKey = 'financePartners';
     
     const formTitle = mode === 'edit' 
-        ? t(isAdmintype ? 'finance.admin_costs.form_edit' : 'finance.nonop_costs.form_edit')
-        : t(isAdmintype ? 'finance.admin_costs.form_add' : 'finance.nonop_costs.form_add');
+        ? t('finance.relations.partner.form_edit')
+        : t('finance.relations.partner.form_add');
 
     const handleChange = (e) => {
-        const { name, value, type } = e.target;
+        const { name, value } = e.target;
         setFormData(prev => ({
             ...prev, 
-            [name]: type === 'number' ? parseFloat(value) || '' : value
+            [name]: value
         }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!isReady || !isAdmin) return; // <-- Check admin
+        if (!isReady || !isAdmin) return; 
 
         setIsLoading(true);
         setMessage('');
@@ -76,7 +69,7 @@ const FinanceCostForm = ({ userId, db, mode = 'add', initialData = null, onClose
 
             setTimeout(onClose, 1000); 
         } catch (error) {
-            console.error(`Error ${mode} cost document: `, error);
+            console.error(`Error ${mode} partner document: `, error);
             setMessage(t('activity.form.fail'));
             setMessageType('error');
             setIsLoading(false);
@@ -86,7 +79,7 @@ const FinanceCostForm = ({ userId, db, mode = 'add', initialData = null, onClose
     return (
         <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
             <div className="flex justify-between items-center">
-                <CardTitle title={formTitle} icon={DollarSign} />
+                <CardTitle title={formTitle} icon={Handshake} />
                 <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
                     <X className="w-5 h-5" />
                 </button>
@@ -94,51 +87,57 @@ const FinanceCostForm = ({ userId, db, mode = 'add', initialData = null, onClose
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 
+                <InputField 
+                    label={t('finance.relations.partner.col.name')} 
+                    name="name" 
+                    value={String(formData.name ?? '')} 
+                    onChange={handleChange} 
+                    disabled={!isAdmin}
+                />
+                
+                <SelectField 
+                    label={t('finance.relations.partner.col.area')} 
+                    name="area" 
+                    options={PARTNER_AREA_OPTIONS} 
+                    value={formData.area} 
+                    onChange={handleChange} 
+                    disabled={!isAdmin}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <InputField 
-                        label={t('finance.col.date')} 
-                        name="date" 
-                        type="date" 
-                        value={String(formData.date ?? '')} 
+                        label={t('finance.relations.partner.col.contact_person')} 
+                        name="contact_person" 
+                        value={String(formData.contact_person ?? '')} 
                         onChange={handleChange} 
-                        disabled={!isAdmin} // <-- Disable field
+                        required={false}
+                        disabled={!isAdmin}
                     />
-                    <SelectField 
-                        label={t('finance.col.category')} 
-                        name="category" 
-                        options={categoryOptions} 
-                        value={formData.category} 
+                    <InputField 
+                        label={t('finance.relations.partner.col.contact_email')} 
+                        name="contact_email" 
+                        type="email"
+                        value={String(formData.contact_email ?? '')} 
                         onChange={handleChange} 
-                        disabled={!isAdmin} // <-- Disable field
+                        required={false}
+                        disabled={!isAdmin}
                     />
                 </div>
 
                 <InputField 
-                    label={t('finance.col.description')} 
-                    name="description" 
-                    value={String(formData.description ?? '')} 
+                    label={t('finance.relations.partner.col.agreement_link')} 
+                    name="agreement_link" 
+                    type="url" 
+                    value={String(formData.agreement_link ?? '')} 
                     onChange={handleChange} 
-                    placeholder={t('finance.col.description_placeholder')}
-                    required={true}
-                    rows={2}
-                    disabled={!isAdmin} // <-- Disable field
+                    required={false}
+                    disabled={!isAdmin}
                 />
 
-                <InputField 
-                    label={t('finance.col.amount')} 
-                    name="amount" 
-                    type="number" 
-                    value={String(formData.amount ?? '')} 
-                    onChange={handleChange} 
-                    required={true}
-                    disabled={!isAdmin} // <-- Disable field
-                />
-
-                {/* --- MODIFICADO: Condicional para botón "Submit" --- */}
                 {isAdmin && (
                     <button
                         type="submit"
-                        disabled={isLoading || !isReady} // Ya no se necesita !isAdmin aquí
+                        disabled={isLoading || !isReady}
                         className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
                             isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
                         }`}
@@ -156,4 +155,4 @@ const FinanceCostForm = ({ userId, db, mode = 'add', initialData = null, onClose
     );
 };
 
-export default FinanceCostForm;
+export default FinancePartnerForm;

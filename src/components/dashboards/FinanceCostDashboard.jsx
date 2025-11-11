@@ -5,8 +5,9 @@ import { Loader2 } from 'lucide-react';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import FinanceCostTable from '../tables/FinanceCostTable.jsx';
 import FinanceCostForm from '../forms/FinanceCosteForm.jsx';
-// Este componente recibe 'costType' ("admin" o "non_op")
-const FinanceCostDashboard = ({ userId, db, costType }) => { 
+
+// Este componente recibe 'costType' ("admin" o "non_op") y 'role'
+const FinanceCostDashboard = ({ userId, db, costType, role }) => { 
     const { t } = useTranslation();
     const [view, setView] = useState('table'); // 'table' or 'form'
     const [activeRecord, setActiveRecord] = useState(null); 
@@ -39,6 +40,7 @@ const FinanceCostDashboard = ({ userId, db, costType }) => {
                     db={db} 
                     onOpenForm={handleOpenForm} 
                     costType={costType}
+                    role={role} // <-- Pass role
                 />
             ) : (
                  <FinanceCostForm
@@ -48,6 +50,7 @@ const FinanceCostDashboard = ({ userId, db, costType }) => {
                     onClose={handleCloseForm}
                     mode={activeRecord ? 'edit' : 'add'}
                     costType={costType}
+                    role={role} // <-- Pass role
                 />
             )}
         </div>

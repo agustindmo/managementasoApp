@@ -8,6 +8,7 @@ import {
     STAKEHOLDER_CATEGORY_OPTIONS, 
     STAKEHOLDER_AMBITO_OPTIONS,
     ALL_FILTER_OPTION,
+    ALL_YEAR_FILTER, // Import year filters
     ANO_OPTIONS,
     SECTOR_OPTIONS,
     ROLE_SCORE_MAP,
@@ -74,6 +75,7 @@ const TreemapMock = ({ data, t }) => {
     );
 };
 
+// --- MODIFICADO: Lógica de labels actualizada ---
 const StakeholderPositionChart = ({ agendaItems, selectedAgendaId, t }) => {
     
     const getRoleScore = (roleKey) => ROLE_SCORE_MAP[roleKey] || 0;
@@ -81,8 +83,10 @@ const StakeholderPositionChart = ({ agendaItems, selectedAgendaId, t }) => {
 
     const stakeholdersToPlot = useMemo(() => {
         let itemsToProcess = [];
-        if (selectedAgendaId === 'all') {
-            itemsToProcess = agendaItems;
+        
+        // --- MODIFICADO: Ya no hay 'all', chequear 'selectedAgendaId' ---
+        if (!selectedAgendaId) {
+            itemsToProcess = [];
         } else {
             const selectedItem = agendaItems.find(item => item.id === selectedAgendaId);
             itemsToProcess = selectedItem ? [selectedItem] : [];
@@ -150,9 +154,11 @@ const StakeholderPositionChart = ({ agendaItems, selectedAgendaId, t }) => {
                             key={p.name}
                             className="absolute w-3 h-3 bg-red-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 group"
                             style={{ left: `${p.x}%`, bottom: `${p.y}%` }}
-                            title={`${p.name}\nIncidencia: ${p.role}\nPosición: ${p.position}`}
                         >
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 pb-1 text-xs text-white whitespace-nowrap opacity-75 group-hover:opacity-100">
+                            {/* --- MODIFICADO: Label con fondo, oculto por defecto --- */}
+                            <div 
+                                className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 pb-1 text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 bg-black/70 px-2 py-1 rounded z-10"
+                            >
                                 {p.name}
                             </div>
                         </div>
@@ -168,40 +174,108 @@ const StakeholderPositionChart = ({ agendaItems, selectedAgendaId, t }) => {
 const StakeholderMapDashboard = ({ db }) => {
     const { t } = useTranslation(); 
     const [agendaItems, setAgendaItems] = useState([]);
+    const [activityItems, setActivityItems] = useState([]); // --- NUEVO: Estado para Actividades
     const [isLoading, setIsLoading] = useState(true);
     const [activeCategoryTab, setActiveCategoryTab] = useState(STAKEHOLDER_CATEGORY_OPTIONS[0]); 
     const [filters, setFilters] = useState({});
     const [sort, setSort] = useState({ key: 'name', direction: 'asc' });
-    const [selectedAgendaId, setSelectedAgendaId] = useState('all');
+    const [selectedAgendaId, setSelectedAgendaId] = useState(null);
+    const [yearFilter, setYearFilter] = useState(ALL_YEAR_FILTER); // --- NUEVO: Estado de Filtro de Año
 
-    // 1. Fetch data from Agenda
+    // 1. Fetch data from Agenda AND Activities
     useEffect(() => {
         if (!db) return;
+        setIsLoading(true);
+        let agendaLoaded = false;
+        let activitiesLoaded = false;
+
+        const checkDone = () => {
+            if (agendaLoaded && activitiesLoaded) setIsLoading(false);
+        };
 
         const agendaRef = ref(db, getDbPaths().agenda);
-        
-        const unsubscribe = onValue(agendaRef, (snapshot) => {
+        const unsubAgenda = onValue(agendaRef, (snapshot) => {
             try {
-                const items = snapshotToArray(snapshot);
-                setAgendaItems(items);
-                setIsLoading(false);
-            } catch (e) {
-                console.error("Agenda fetch error:", e);
-                setIsLoading(false);
-            }
-        }, (error) => { console.error("Agenda Subscription Error:", error); setIsLoading(false); });
+                setAgendaItems(snapshotToArray(snapshot));
+            } catch (e) { console.error("Agenda fetch error:", e); }
+            finally { agendaLoaded = true; checkDone(); }
+        }, (error) => { console.error("Agenda Subscription Error:", error); agendaLoaded = true; checkDone(); });
         
-        return () => unsubscribe();
+        // --- NUEVO: Fetch de Actividades ---
+        const activitiesRef = ref(db, getDbPaths().activities);
+        const unsubActivities = onValue(activitiesRef, (snapshot) => {
+            try {
+                setActivityItems(snapshotToArray(snapshot));
+            } catch (e) { console.error("Activities fetch error:", e); }
+            finally { activitiesLoaded = true; checkDone(); }
+        }, (error) => { console.error("Activities Subscription Error:", error); activitiesLoaded = true; checkDone(); });
+
+        return () => {
+            unsubAgenda();
+            unsubActivities(); // Limpiar ambas suscripciones
+        };
     }, [db]);
 
-    // 2. Aggregate Stakeholders
-    const { stakeholderMetrics, categorizedStakeholders, aggregatedTreemapData } = useMemo(() => {
-        const stakeholderMap = {};
+    // --- NUEVO: Hooks para filtrar datos por año ---
+    const filteredAgendaItems = useMemo(() => {
+        if (yearFilter === ALL_YEAR_FILTER) return agendaItems;
+        return agendaItems.filter(item => item.ano === yearFilter);
+    }, [agendaItems, yearFilter]);
+
+    const filteredActivityItems = useMemo(() => {
+        if (yearFilter === ALL_YEAR_FILTER) return activityItems;
+        return activityItems.filter(item => item.date && item.date.startsWith(yearFilter));
+    }, [activityItems, yearFilter]);
+
+    // Hook para setear el ID de agenda por defecto (basado en agenda FILTRADA)
+    useEffect(() => {
+        if (filteredAgendaItems.length > 0) {
+            // Si el ID seleccionado ya no está en la lista filtrada, resetea
+            const isSelectedIdValid = filteredAgendaItems.some(item => item.id === selectedAgendaId);
+            if (!isSelectedIdValid) {
+                setSelectedAgendaId(filteredAgendaItems[0].id);
+            }
+        } else {
+            setSelectedAgendaId(null); // No hay items
+        }
+    }, [filteredAgendaItems, selectedAgendaId]);
+
+    // 2. Aggregate Stakeholders (MODIFICADO para usar datos separados)
+    // --- Métricas y Treemap (Contadores) -> Usan Activity Log ---
+    const { stakeholderMetrics, aggregatedTreemapData } = useMemo(() => {
         const treemapDataByStakeholder = {}; 
-        let totalUniqueStakeholders = 0;
+        let totalEngagements = 0;
         const uniqueNames = new Set();
         
-        agendaItems.forEach(agenda => {
+        // Usar datos de ACTIVIDADES FILTRADAS
+        filteredActivityItems.forEach(activity => {
+            const institutions = Array.isArray(activity.institution) ? activity.institution : [activity.institution];
+            
+            (institutions || []).forEach(instName => {
+                if (!instName || instName === 'N/A') return;
+                
+                const nameKey = instName.trim();
+                uniqueNames.add(nameKey);
+                treemapDataByStakeholder[nameKey] = (treemapDataByStakeholder[nameKey] || 0) + 1;
+                totalEngagements++; // Contar cada aparición
+            });
+        });
+        
+        return {
+            stakeholderMetrics: {
+                totalUnique: uniqueNames.size,
+                totalEngagements: totalEngagements, // Métrica corregida
+            },
+            aggregatedTreemapData: treemapDataByStakeholder, 
+        };
+    }, [filteredActivityItems]); // Depende de las actividades filtradas
+
+    // --- Tabla de Stakeholders -> Usa Agenda ---
+    const { categorizedStakeholders } = useMemo(() => {
+        const stakeholderMap = {};
+        
+        // Usar datos de AGENDA FILTRADA
+        filteredAgendaItems.forEach(agenda => {
             const agendaName = agenda.nombre || 'N/A';
             const agendaSector = agenda.sector || 'N/A';
             const agendaYear = agenda.ano || 'N/A';
@@ -211,11 +285,6 @@ const StakeholderMapDashboard = ({ db }) => {
                     const nameKey = s.name.trim();
                     if (!nameKey) return;
                     
-                    if (!uniqueNames.has(nameKey)) {
-                         uniqueNames.add(nameKey);
-                         totalUniqueStakeholders++;
-                    }
-
                     const key = `${nameKey}|${s.type}|${s.ambito}`;
                     
                     stakeholderMap[key] = stakeholderMap[key] || {
@@ -231,9 +300,7 @@ const StakeholderMapDashboard = ({ db }) => {
                     stakeholderMap[key].agendaItems.add(agendaName);
                     stakeholderMap[key].sectors.add(agendaSector);
                     stakeholderMap[key].years.add(agendaYear);
-                    stakeholderMap[key].totalCount++; 
-
-                    treemapDataByStakeholder[nameKey] = (treemapDataByStakeholder[nameKey] || 0) + 1;
+                    stakeholderMap[key].totalCount++;
                 });
             }
         });
@@ -250,18 +317,11 @@ const StakeholderMapDashboard = ({ db }) => {
             return acc;
         }, {});
 
-        return {
-            stakeholderMetrics: {
-                totalUnique: totalUniqueStakeholders,
-                totalRecords: allStakeholders.length, 
-            },
-            categorizedStakeholders: categorized,
-            aggregatedTreemapData: treemapDataByStakeholder, 
-        };
-    }, [agendaItems]);
+        return { categorizedStakeholders: categorized };
+    }, [filteredAgendaItems]); // Depende de la agenda filtrada
 
 
-    // 3. Filtering and Sorting Logic
+    // 3. Filtering and Sorting Logic (para la tabla)
     const filteredStakeholders = useMemo(() => {
         let currentData = categorizedStakeholders[activeCategoryTab] || [];
         
@@ -303,8 +363,7 @@ const StakeholderMapDashboard = ({ db }) => {
                 }
             });
         }
-
-        // *** CORRECCIÓN DEL ERROR: Devolver 'currentData' en lugar de la variable que se está definiendo ***
+        
         return currentData; 
     }, [categorizedStakeholders, activeCategoryTab, filters, sort]);
 
@@ -327,7 +386,7 @@ const StakeholderMapDashboard = ({ db }) => {
         { labelKey: "stakeholder.col.scope", key: "ambito", sortable: true, filterable: true, options: Object.values(STAKEHOLDER_AMBITO_OPTIONS) }, 
         { labelKey: "stakeholder.col.agenda_items", key: "agendaItems", sortable: false, filterable: true, type: 'string' },
         { labelKey: "stakeholder.col.sectors", key: "sectors", sortable: false, filterable: true, options: SECTOR_OPTIONS },
-        { labelKey: "stakeholder.col.years", key: "years", sortable: true, filterable: true, options: ANO_OPTIONS.filter(opt => opt !== ALL_FILTER_OPTION) },
+        { labelKey: "stakeholder.col.years", key: "years", sortable: true, filterable: true, options: ANO_OPTIONS.filter(opt => opt !== ALL_YEAR_FILTER) },
         { labelKey: "stakeholder.col.total_engagements", key: "totalCount", sortable: true, filterable: false, type: 'number' },
     ];
 
@@ -409,53 +468,72 @@ const StakeholderMapDashboard = ({ db }) => {
         );
     }
 
-    const agendaOptions = [
-        { value: 'all', label: t('stakeholder.chart.all_agendas') },
-        ...agendaItems.map(item => ({ value: item.id, label: item.nombre || 'Untitled' }))
-    ];
+    // --- MODIFICADO: Opciones de Agenda sin "All" ---
+    const agendaOptions = filteredAgendaItems.map(item => ({ value: item.id, label: item.nombre || 'Untitled' }));
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <h1 className="text-3xl font-bold text-white mb-6 flex items-center">
-                <MapIcon className="w-8 h-8 mr-3 text-sky-400" />
-                {t('stakeholder.title')}
-            </h1>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                <h1 className="text-3xl font-bold text-white flex items-center">
+                    <MapIcon className="w-8 h-8 mr-3 text-sky-400" />
+                    {t('stakeholder.title')}
+                </h1>
+                
+                {/* --- NUEVO: Filtro de Año --- */}
+                <div className="rounded-xl shadow max-w-xs border border-sky-700/50 bg-black/40 backdrop-blur-lg p-2 mt-4 sm:mt-0">
+                    <SelectField 
+                        label={t('director.filter_year')}
+                        name="yearFilter" 
+                        options={ANO_OPTIONS} 
+                        value={yearFilter} 
+                        onChange={(e) => setYearFilter(e.target.value)} 
+                    />
+                </div>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="p-4 rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg flex flex-col items-center justify-center">
                     <p className="text-4xl font-extrabold text-white">{stakeholderMetrics.totalUnique}</p>
                     <p className="text-sm text-gray-400 mt-1">{t('stakeholder.total_unique')}</p>
                 </div>
+                {/* --- MODIFICADO: Valor usa 'totalEngagements' --- */}
                 <div className="p-4 rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg flex flex-col items-center justify-center">
-                    <p className="text-4xl font-extrabold text-sky-400">{stakeholderMetrics.totalRecords}</p>
+                    <p className="text-4xl font-extrabold text-sky-400">{stakeholderMetrics.totalEngagements}</p>
                     <p className="text-sm text-gray-400 mt-1">{t('stakeholder.total_engagements')}</p>
                 </div>
             </div>
 
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8">
-                <CardTitle title={t('stakeholder.all_engagements_title')} icon={PieChart} />
+                <CardTitle title={`${t('stakeholder.all_engagements_title')} (${yearFilter})`} icon={PieChart} />
                 <div className="p-4">
                     <TreemapMock data={aggregatedTreemapData} t={t} />
                 </div>
             </div>
 
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8">
-                <CardTitle title={t('stakeholder.chart.title')} icon={Target} />
+                <CardTitle title={`${t('stakeholder.chart.title')} (${yearFilter})`} icon={Target} />
                 <div className="p-4">
-                    <div className="max-w-xs mb-4">
-                        <SelectField 
-                            label={t('stakeholder.chart.select_agenda')}
-                            name="agendaFilter"
-                            options={agendaOptions}
-                            value={selectedAgendaId}
-                            onChange={(e) => setSelectedAgendaId(e.target.value)}
-                        />
-                    </div>
-                    <StakeholderPositionChart 
-                        agendaItems={agendaItems} 
-                        selectedAgendaId={selectedAgendaId} 
-                        t={t} 
-                    />
+                    {/* --- MODIFICADO: Dropdown y renderizado de gráfico --- */}
+                    {agendaOptions.length > 0 ? (
+                        <>
+                            <div className="max-w-xs mb-4">
+                                <SelectField 
+                                    label={t('stakeholder.chart.select_agenda')}
+                                    name="agendaFilter"
+                                    options={agendaOptions}
+                                    value={selectedAgendaId || agendaOptions[0].value} // Usar el estado o el primero de la lista
+                                    onChange={(e) => setSelectedAgendaId(e.target.value)}
+                                />
+                            </div>
+                            <StakeholderPositionChart 
+                                agendaItems={filteredAgendaItems} // Pasar items filtrados
+                                selectedAgendaId={selectedAgendaId} 
+                                t={t} 
+                            />
+                        </>
+                    ) : (
+                        <p className="text-gray-500 text-center py-4">{t('agenda.no_data')}</p>
+                    )}
                 </div>
             </div>
 
@@ -476,7 +554,7 @@ const StakeholderMapDashboard = ({ db }) => {
                     ))}
                 </div>
 
-                <CardTitle title={`${getCategoryLabel(activeCategoryTab)} ${t('sidebar.stakeholder_map')} (${filteredStakeholders.length})`} icon={LayoutList} />
+                <CardTitle title={`${getCategoryLabel(activeCategoryTab)} ${t('sidebar.stakeholder_map')} (${filteredStakeholders.length}) (${yearFilter})`} icon={LayoutList} />
                 
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-sky-800/50">

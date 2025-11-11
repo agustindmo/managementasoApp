@@ -46,13 +46,14 @@ export const INITIAL_MILESTONE_STATE = {
 export const ACTIVITY_TYPE_OPTIONS = ["letter", "meeting"];
 export const MEETING_MODE_OPTIONS = ["in person", "virtual", "hybrid"];
 
+// --- MODIFICADO ---
 export const INITIAL_ACTIVITY_STATE = {
     activityType: ACTIVITY_TYPE_OPTIONS[0], 
     meetingMode: MEETING_MODE_OPTIONS[0], 
     date: new Date().toISOString().slice(0, 10), 
     timeSpent: 0, 
-    institution: '', 
-    tema: '', 
+    institution: [], // Actualizado a array
+    tema: [],        // Actualizado a array
     participants: '', 
     documentLink: '', 
 };
@@ -141,8 +142,10 @@ export const ACTIVITY_COLUMN_OPTIONS_MAP = {
     meetingMode: MEETING_MODE_OPTIONS,
 };
 
-// --- Constantes para Tabla de Perfiles de Admin ---
-export const PROFILE_TABLE_COLUMNS = [
+// --- Constantes para Tablas de Perfil de Admin (ACTUALIZADO) ---
+
+// 1. Columnas para la Pestaña de MIEMBROS
+export const MEMBERS_PROFILE_TABLE_COLUMNS = [
     { labelKey: "profile.col.email", key: "email", sortable: true, filterable: true, type: 'string' },
     { labelKey: "profile.col.user_id", key: "id", sortable: false, filterable: true, type: 'string' },
     { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
@@ -151,10 +154,26 @@ export const PROFILE_TABLE_COLUMNS = [
     { labelKey: "profile.col.representative_id", key: "representative_id", sortable: false, filterable: true, type: 'string' },
     { labelKey: "profile.col.activity", key: "activity", sortable: true, filterable: true, optionsKey: 'activity', type: 'string' },
     { labelKey: "profile.col.is_grower", key: "is_grower", sortable: true, filterable: true, optionsKey: 'boolean', type: 'boolean' },
-    { labelKey: "profile.col.farms", key: "farms", sortable: false, filterable: true, type: 'farms_array' },
-    { labelKey: "profile.col.export_certifications", key: "export_certifications", sortable: false, filterable: true, optionsKey: 'certifications', type: 'cert_array' },
-    { labelKey: "profile.col.farm_certifications", key: "farm_certifications", sortable: false, filterable: true, optionsKey: 'certifications', type: 'cert_array' },
-    { labelKey: "profile.col.contacts", key: "contacts", sortable: false, filterable: true, type: 'contacts_array' },
+    { labelKey: "profile.col.export_certifications", key: "export_certifications", sortable: false, filterable: false, optionsKey: 'certifications', type: 'cert_array' },
+    { labelKey: "profile.col.farm_certifications", key: "farm_certifications", sortable: false, filterable: false, optionsKey: 'certifications', type: 'cert_array' },
+];
+
+// 2. Columnas para la Pestaña de FINCAS
+export const FARMS_PROFILE_TABLE_COLUMNS = [
+    { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.farm_province", key: "province", sortable: true, filterable: true, optionsKey: 'farm_province', type: 'string' },
+    { labelKey: "profile.col.farm_city", key: "city", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.farm_hectares", key: "hectares", sortable: true, filterable: true, type: 'number' },
+    { labelKey: "profile.col.farm_workers", key: "workers", sortable: true, filterable: true, type: 'number' },
+];
+
+// 3. Columnas para la Pestaña de CONTACTOS
+export const CONTACTS_PROFILE_TABLE_COLUMNS = [
+    { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.contact_name", key: "contact_name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.contact_email", key: "contact_email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.col.contact_phone", key: "contact_phone", sortable: false, filterable: true, type: 'string' },
+    { labelKey: "profile.col.contact_area", key: "contact_area", sortable: true, filterable: true, optionsKey: 'contact_area', type: 'string' },
 ];
 
 export const PROFILE_COLUMN_OPTIONS_MAP = {
@@ -174,9 +193,9 @@ export const ROLE_SCORE_MAP = {
 };
 
 export const POSITION_SCORE_MAP = {
-    "stakeholder.position.against": 1,
-    "stakeholder.position.neutral": 2,
     "stakeholder.position.in_favor": 3,
+    "stakeholder.position.neutral": 2,
+    "stakeholder.position.against": 1,
 };
 
 // Constantes para Log de Prensa
@@ -189,36 +208,73 @@ export const PRESS_LOG_FORMAT_OPTIONS = [
 export const PRESS_LOG_REACH_OPTIONS = [
     "National", "International"
 ];
+// --- NUEVAS CONSTANTES ---
+export const IMPACT_OPTIONS = ["Positive", "Neutral", "Negative"];
 
-// MODIFICACIÓN: Añadir 'mediaStakeholders' a INITIAL_PRESS_LOG_STATE
+// --- ESTADO INICIAL ACTUALIZADO ---
 export const INITIAL_PRESS_LOG_STATE = {
     date: new Date().toISOString().slice(0, 10),
-    activity: PRESS_LOG_ACTIVITY_OPTIONS[0],
-    format: [], 
-    mediaName: '',
+    agendaItems: [], // Nuevo
+    otherAgendaItem: '', // Nuevo
+    mediaEntries: [], // Nuevo (reemplaza mediaName y format)
+    impact: IMPACT_OPTIONS[1], // Nuevo
     reach: PRESS_LOG_REACH_OPTIONS[0],
     audience: '',
     freePress: '',
     link: '',
-    mediaStakeholders: [], // ¡NUEVO CAMPO AÑADIDO!
+    mediaStakeholderKeys: [], // Nuevo (reemplaza mediaStakeholders object)
 };
 
+// --- COLUMNAS DE TABLA ACTUALIZADAS ---
 export const PRESS_LOG_TABLE_COLUMNS = [
     { labelKey: "press_log.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
-    { labelKey: "press_log.col.activity", key: "activity", sortable: true, filterable: true, optionsKey: 'activity', type: 'string' },
-    { labelKey: "press_log.col.media", key: "mediaName", sortable: true, filterable: true, type: 'string' },
-    { labelKey: "press_log.col.format", key: "format", sortable: false, filterable: true, optionsKey: 'format', type: 'array' },
+    { labelKey: "press_log.col.agenda_items", key: "agendaItems", sortable: false, filterable: true, type: 'array' },
+    { labelKey: "press_log.col.media_entries", key: "mediaEntries", sortable: false, filterable: true, type: 'array' },
+    { labelKey: "press_log.col.impact", key: "impact", sortable: true, filterable: true, optionsKey: 'impact', type: 'string' },
     { labelKey: "press_log.col.reach", key: "reach", sortable: true, filterable: true, optionsKey: 'reach', type: 'string' },
-    { labelKey: "press_log.col.audience", key: "audience", sortable: true, filterable: true, type: 'number' },
-    { labelKey: "press_log.col.free_press", key: "freePress", sortable: true, filterable: true, type: 'number' },
+    { labelKey: "press_log.col.stakeholders", key: "mediaStakeholderKeys", sortable: false, filterable: true, type: 'array' },
     { labelKey: "press_log.col.link", key: "link", sortable: false, filterable: false, type: 'string' },
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
+
+// --- MAPA DE FILTROS ACTUALIZADO ---
 export const PRESS_LOG_COLUMN_OPTIONS_MAP = {
-    activity: PRESS_LOG_ACTIVITY_OPTIONS,
-    format: PRESS_LOG_FORMAT_OPTIONS,
+    impact: IMPACT_OPTIONS,
     reach: PRESS_LOG_REACH_OPTIONS,
+    // format y activity ya no son columnas principales
 };
+
+
+// --- Constantes de Media Stakeholder (ACTUALIZADAS) ---
+// Usar PRESS_LOG_FORMAT_OPTIONS para 'type'
+export const MEDIA_STAKEHOLDER_CATEGORY_OPTIONS = PRESS_LOG_FORMAT_OPTIONS;
+
+// --- NUEVO: Opciones de Alcance (Scope) ---
+export const MEDIA_SCOPE_OPTIONS = ["National", "International", "Local", "Province"];
+// Usar STAKEHOLDER_POSITION_OPTIONS (In Favor, Against, Neutral)
+
+export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
+    name: '',
+    type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS[0], // Default a 'Online'
+    scope: MEDIA_SCOPE_OPTIONS[0], // Default a 'National'
+    position: STAKEHOLDER_POSITION_OPTIONS[2], // Default a 'Neutral'
+};
+
+// Columnas para la tabla de Media Stakeholder (ACTUALIZADO)
+export const MEDIA_STAKEHOLDER_TABLE_COLUMNS = [
+    { labelKey: "stakeholder.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "stakeholder.col.type", key: "type", sortable: true, filterable: true, optionsKey: 'type' }, 
+    { labelKey: "stakeholder.col.position", key: "position", sortable: true, filterable: true, optionsKey: 'position' },
+    { labelKey: "stakeholder.col.scope", key: "scope", sortable: true, filterable: true, optionsKey: 'scope' },
+    { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
+];
+
+export const MEDIA_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
+    type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS,
+    position: STAKEHOLDER_POSITION_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })), // Se traducirá en el componente
+    scope: MEDIA_SCOPE_OPTIONS,
+};
+
 
 // TAREA 2: Constantes para la Tabla de Cuotas de Membresía
 export const MEMBERSHIP_TYPE_OPTIONS = ["Exporter", "Adherent"];
@@ -231,6 +287,7 @@ export const MEMBERSHIP_FEE_TABLE_COLUMNS = [
     { labelKey: "admin.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
 
+// --- ESTE ES EL EXPORT QUE FALTABA ---
 export const MEMBERSHIP_FEE_COLUMN_OPTIONS_MAP = {
     activity: INDUSTRY_ACTIVITIES,
     membershipType: MEMBERSHIP_TYPE_OPTIONS,
@@ -346,57 +403,6 @@ export const AUDIT_COLUMN_OPTIONS_MAP = {
     // Todos los campos son de texto o fecha, no se necesitan opciones de select
 };
 
-// TAREA (Media Stakeholders): Constantes para Media Stakeholders
-// Duplicadas de las constantes de stakeholders existentes
-export const MEDIA_STAKEHOLDER_TYPE_OPTIONS = {
-    'Public': 'public',
-    'Private Sector': 'private',
-    'Civil Society/NGOs': 'civil society and ngos',
-    'Media': 'media', // Añadida una nueva categoría relevante
-};
-export const MEDIA_STAKEHOLDER_AMBITO_OPTIONS = {
-    'National': 'national',
-    'International': 'international',
-};
-export const MEDIA_STAKEHOLDER_CATEGORY_OPTIONS = ['public', 'private', 'civil society and ngos', 'media'];
-
-export const MEDIA_STAKEHOLDER_ROLE_OPTIONS = [
-    "stakeholder.role.changes_policy", // Reutilizamos claves de traducción
-    "stakeholder.role.influences_policy",
-    "stakeholder.role.technical", 
-    "stakeholder.role.other" 
-];
-export const MEDIA_STAKEHOLDER_POSITION_OPTIONS = [
-    "stakeholder.position.in_favor", 
-    "stakeholder.position.against", 
-    "stakeholder.position.neutral" 
-];
-
-export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
-    name: '',
-    type: Object.values(MEDIA_STAKEHOLDER_TYPE_OPTIONS)[3], // Default a 'media'
-    ambito: Object.values(MEDIA_STAKEHOLDER_AMBITO_OPTIONS)[0], 
-    role: MEDIA_STAKEHOLDER_ROLE_OPTIONS[1], // Default a 'influencer'
-    position: MEDIA_STAKEHOLDER_POSITION_OPTIONS[2], // Default a 'neutral'
-};
-
-// Columnas para la nueva tabla de Media Stakeholder Map
-export const MEDIA_STAKEHOLDER_TABLE_COLUMNS = [
-    { labelKey: "stakeholder.col.name", key: "name", sortable: true, filterable: true, type: 'string' }, // Reutiliza clave de traducción
-    { labelKey: "stakeholder.col.scope", key: "ambito", sortable: true, filterable: true, options: Object.values(MEDIA_STAKEHOLDER_AMBITO_OPTIONS) }, 
-    { labelKey: "press_log.col.media", key: "pressLogItems", sortable: false, filterable: true, type: 'string' }, // Cambiado de 'agendaItems'
-    { labelKey: "press_log.col.reach", key: "reaches", sortable: false, filterable: true, optionsKey: 'reach', type: 'string' }, // Nuevo
-    { labelKey: "policy.col.ano", key: "years", sortable: true, filterable: true, options: ANO_OPTIONS.filter(opt => opt !== ALL_YEAR_FILTER) }, 
-    { labelKey: "stakeholder.col.total_engagements", key: "totalCount", sortable: true, filterable: false, type: 'number' },
-];
-
-export const MEDIA_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
-    ambito: Object.values(MEDIA_STAKEHOLDER_AMBITO_OPTIONS),
-    reach: PRESS_LOG_REACH_OPTIONS, // Reutiliza las opciones de alcance
-    type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS,
-};
-
-
 // TAREA 7: Constantes para Proveedores y Relaciones
 export const PROVIDER_TYPE_OPTIONS = ["Person", "Company"];
 export const PROVIDER_PRODUCT_SERVICE_OPTIONS = ["Supplies", "Consulting", "Logistics", "Legal", "Technology", "Other"];
@@ -435,6 +441,30 @@ export const PROVIDER_COLUMN_OPTIONS_MAP = {
     boolean: ["Yes", "No"],
 };
 
+// --- NUEVAS CONSTANTES PARA SOCIOS ---
+export const PARTNER_AREA_OPTIONS = ["Sostenibilidad", "Comercio", "Legal", "Tecnología", "Otro"];
+
+export const INITIAL_PARTNER_STATE = {
+    name: '',
+    area: PARTNER_AREA_OPTIONS[0],
+    contact_person: '',
+    contact_email: '',
+    agreement_link: '',
+};
+
+export const PARTNER_TABLE_COLUMNS = [
+    { labelKey: "finance.relations.partner.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "finance.relations.partner.col.area", key: "area", sortable: true, filterable: true, optionsKey: 'area', type: 'string' },
+    { labelKey: "finance.relations.partner.col.contact_person", key: "contact_person", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "finance.relations.partner.col.contact_email", key: "contact_email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "finance.relations.partner.col.agreement_link", key: "agreement_link", sortable: false, filterable: false, type: 'string' },
+    { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
+];
+
+export const PARTNER_COLUMN_OPTIONS_MAP = {
+    area: PARTNER_AREA_OPTIONS,
+};
+
 // Columnas para la tabla de Donantes (solo lectura)
 export const DONORS_READONLY_TABLE_COLUMNS = [
     { labelKey: "finance.donations.col.donor", key: "donor", sortable: true, filterable: true, type: 'string' },
@@ -451,19 +481,21 @@ export const BENEFICIARIES_READONLY_TABLE_COLUMNS = [
     { labelKey: "profile.col.farms", key: "farms", sortable: false, filterable: true, type: 'farms_array' },
 ];
 
-// TAREA 10: Constantes para Solicitud de Miembros
+// TAREA 10: Constantes para Solicitud de Miembros (ACTUALIZADO)
 export const MEMBER_REQUEST_STATUS_OPTIONS = ["Low", "Medium", "High"];
 export const INITIAL_MEMBER_REQUEST_STATE = {
     company_name: '',
     commercial_name: '',
     legal_rep: '',
     ceo: '',
-    partners: '',
+    partners: [], // Actualizado a array
     activity: INDUSTRY_ACTIVITIES[0],
+    country: 'Ecuador', // Nuevo campo
     province: ECUADOR_PROVINCES[0],
-    city: ECUADOR_DATA[ECUADOR_PROVINCES[0]][0], // Ciudad por defecto
-    commercial_refs: '',
+    city: ECUADOR_DATA[ECUADOR_PROVINCES[0]][0], 
+    commercial_refs: [], // Actualizado a array
     risk_status: MEMBER_REQUEST_STATUS_OPTIONS[0],
+    risk_link: '', // Nuevo campo
 };
 
 // TAREA 1: Constantes para Costos (Resumen Financiero)

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, set, push, serverTimestamp, onValue } from 'firebase/database';
-import { Clock, X } from 'lucide-react';
+import { Clock, X, Plus, Trash2, Search } from 'lucide-react'; // Import icons
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import SelectField from '../ui/SelectField.jsx';
@@ -12,7 +12,7 @@ import {
     MEETING_MODE_OPTIONS
 } from '../../utils/constants.js'; 
 import { getDbPaths } from '../../services/firebase.js'; 
-import { useTranslation } from '../../context/TranslationContext.jsx'; // Tarea 2
+import { useTranslation } from '../../context/TranslationContext.jsx'; 
 
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
@@ -23,8 +23,72 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
+// --- Helper Component for Multi-Select ---
+const MultiSelectSearch = ({ labelKey, selectedItems, allOptions, onAddItem, onRemoveItem, t }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredOptions = useMemo(() => {
+        if (!searchTerm) return [];
+        return allOptions.filter(
+            opt => opt.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                   !selectedItems.includes(opt)
+        );
+    }, [searchTerm, allOptions, selectedItems]);
+
+    return (
+        <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-3">
+            <label className="block text-sm font-medium text-gray-200">{t(labelKey)}</label>
+            
+            {/* Search Input */}
+            <InputField 
+                label=""
+                name={`search_${labelKey}`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                required={false}
+                placeholder={t('policy.search')}
+            />
+
+            {/* Search Results */}
+            {filteredOptions.length > 0 && (
+                <div className="max-h-32 overflow-y-auto space-y-1 rounded-lg border border-sky-700 bg-black/40 p-2">
+                    {filteredOptions.slice(0, 10).map(option => ( // Limitar a 10 resultados
+                        <div 
+                            key={option}
+                            className="p-2 text-sm text-gray-200 rounded-md hover:bg-sky-700 cursor-pointer"
+                            onClick={() => {
+                                onAddItem(option);
+                                setSearchTerm('');
+                            }}
+                        >
+                            {option}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Selected Items */}
+            <div className="flex flex-wrap gap-2 min-h-[20px] pt-2">
+                {selectedItems.map((item, index) => (
+                    <span key={index} className="flex items-center bg-sky-700 text-white text-sm font-medium px-2 py-0.5 rounded-full">
+                        {item}
+                        <button
+                            type="button"
+                            onClick={() => onRemoveItem(item)}
+                            className="ml-1.5 text-sky-200 hover:text-white"
+                        >
+                            <X className="w-3 h-3" />
+                        </button>
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+
 const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose }) => {
-    const { t } = useTranslation(); // Tarea 2
+    const { t } = useTranslation(); 
     const [formData, setFormData] = useState(initialData || INITIAL_ACTIVITY_STATE);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -33,7 +97,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
 
     const isReady = !!db && !!userId;
     const isMeeting = formData.activityType === 'meeting';
-    // Tarea 2: Títulos traducidos
     const formTitle = mode === 'edit' 
         ? `${t('activity.form.edit_title')}: ${initialData?.id.substring(0, 8)}...` 
         : t('activity.form.add_title');
@@ -70,6 +133,35 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
         }));
     };
 
+    // --- Handlers for Multi-Select Institucion ---
+    const addInstitution = (institution) => {
+        setFormData(prev => ({
+            ...prev,
+            institution: [...(prev.institution || []), institution]
+        }));
+    };
+    const removeInstitution = (institutionToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            institution: (prev.institution || []).filter(item => item !== institutionToRemove)
+        }));
+    };
+
+    // --- Handlers for Multi-Select Tema ---
+    const addTema = (tema) => {
+        setFormData(prev => ({
+            ...prev,
+            tema: [...(prev.tema || []), tema]
+        }));
+    };
+    const removeTema = (temaToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            tema: (prev.tema || []).filter(item => item !== temaToRemove)
+        }));
+    };
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -95,7 +187,7 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                     ...submissionData,
                     updatedAt: serverTimestamp(),
                 });
-                setMessage(t('activity.form.success_update')); // Tarea 2
+                setMessage(t('activity.form.success_update')); 
             } else {
                 const newItemRef = push(ref(db, path));
                 await set(newItemRef, {
@@ -104,19 +196,18 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                     createdAt: serverTimestamp(),
                     createdBy: userId,
                 });
-                setMessage(t('activity.form.success_add')); // Tarea 2
+                setMessage(t('activity.form.success_add')); 
             }
 
             setTimeout(onClose, 1000); 
         } catch (error) {
             console.error(`Error ${mode} Activity document in Realtime DB: `, error);
-            setMessage(t('activity.form.fail')); // Tarea 2
+            setMessage(t('activity.form.fail')); 
             setMessageType('error');
             setIsLoading(false);
         }
     };
 
-    // Tarea 1: Contenedor oscuro
     return (
         <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
             <div className="flex justify-between items-center">
@@ -128,7 +219,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 
-                {/* Tarea 2: Etiquetas traducidas */}
                 <SelectField 
                     label={t('activity.form.type')} 
                     name="activityType" 
@@ -138,7 +228,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                 />
 
                 {isMeeting && (
-                    // Tarea 1: Estilo de sección oscuro
                     <div className="grid grid-cols-2 gap-4 border border-sky-800/50 p-4 rounded-lg bg-sky-950/30">
                         <SelectField 
                             label={t('activity.form.mode')} 
@@ -165,29 +254,32 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                     </div>
                 )}
                 
-                <div className="grid grid-cols-2 gap-4">
-                    <InputField 
-                        label={t('activity.form.date')} 
-                        name="date" 
-                        type="date" 
-                        value={String(formData.date ?? '')} 
-                        onChange={handleChange} 
-                    />
-                    <SelectField 
-                        label={t('activity.form.institution')} 
-                        name="institution" 
-                        options={institutionOptions} 
-                        value={formData.institution} 
-                        onChange={handleChange} 
-                    />
-                </div>
-                
-                <SelectField 
-                    label={t('activity.form.tema')} 
-                    name="tema" 
-                    options={temaOptions} 
-                    value={formData.tema} 
+                <InputField 
+                    label={t('activity.form.date')} 
+                    name="date" 
+                    type="date" 
+                    value={String(formData.date ?? '')} 
                     onChange={handleChange} 
+                />
+                
+                {/* --- MODIFICADO: Multi-Select para Institución --- */}
+                <MultiSelectSearch
+                    labelKey="activity.form.institution"
+                    selectedItems={formData.institution || []}
+                    allOptions={institutionOptions}
+                    onAddItem={addInstitution}
+                    onRemoveItem={removeInstitution}
+                    t={t}
+                />
+                
+                {/* --- MODIFICADO: Multi-Select para Tema --- */}
+                <MultiSelectSearch
+                    labelKey="activity.form.tema"
+                    selectedItems={formData.tema || []}
+                    allOptions={temaOptions}
+                    onAddItem={addTema}
+                    onRemoveItem={removeTema}
+                    t={t}
                 />
 
                 <InputField 
@@ -202,12 +294,10 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                 <button
                     type="submit"
                     disabled={isLoading || !isReady}
-                    // Tarea 1: Botón con paleta sky
                     className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
                         isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
                     }`}
                 >
-                    {/* Tarea 2: Texto de botón traducido */}
                     {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
                 </button>
                 {message && (

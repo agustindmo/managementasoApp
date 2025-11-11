@@ -22,33 +22,54 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// --- Fila de la Tabla ---
-const PressLogTableRow = ({ item, onEdit, onDelete, t }) => {
+// --- Fila de la Tabla (ACTUALIZADO CON CORRECCIÓN) ---
+const PressLogTableRow = ({ item, onEdit, onDelete, t, agendaMap, stakeholderMap }) => {
     
-    const formatString = (item.format || []).map(f => t(`press_log.format_opts.${f.toLowerCase()}`)).join(', ');
-    
+    // Convertir IDs de agenda a nombres
+    const agendaNames = (item.agendaItems || [])
+        .map(id => {
+            if (id === 'other') return item.otherAgendaItem || t('press_log.form.other_item');
+            return agendaMap[id] || id; // Mostrar nombre o ID si no se encuentra
+        })
+        .join(', ');
+
+    // Formatear entradas de medios
+    const mediaEntries = (item.mediaEntries || [])
+        .map(e => `${e.name} (${t(`press_log.format_opts.${(e.format || 'online').toLowerCase()}`)})`) // Añadido fallback para e.format
+        .join('; ');
+        
+    // Convertir IDs de stakeholder a nombres
+    const stakeholderNames = (item.mediaStakeholderKeys || [])
+        .map(key => stakeholderMap[key] || key)
+        .join(', ');
+
+    // *** INICIO DE LA CORRECCIÓN ***
+    // Proporcionar valores predeterminados para 'impact' y 'reach' antes de llamar a .toLowerCase()
+    const impact = item.impact || 'Neutral';
+    const reach = item.reach || 'National';
+    // *** FIN DE LA CORRECCIÓN ***
+
     return (
         <tr className="hover:bg-sky-900/60 transition-colors">
             <td className="px-6 py-3 text-sm font-medium text-white whitespace-nowrap" title={item.date}>
                 {item.date}
             </td>
-            <td className="px-6 py-3 text-sm text-gray-400" title={item.activity}>
-                {t(`press_log.activity_opts.${item.activity.toLowerCase().replace(/ /g, '_')}`)}
+            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={agendaNames}>
+                {agendaNames}
             </td>
-            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={item.mediaName}>
-                {item.mediaName}
+            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={mediaEntries}>
+                {mediaEntries}
             </td>
-            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[150px]" title={formatString}>
-                {formatString}
+            <td className="px-6 py-3 text-sm text-gray-400" title={impact}>
+                {/* Corregido aquí */}
+                {t(`press_log.impact_opts.${impact.toLowerCase()}`)}
             </td>
-            <td className="px-6 py-3 text-sm text-gray-400" title={item.reach}>
-                {t(`press_log.reach_opts.${item.reach.toLowerCase()}`)}
+            <td className="px-6 py-3 text-sm text-gray-400" title={reach}>
+                {/* Corregido aquí */}
+                {t(`press_log.reach_opts.${reach.toLowerCase()}`)}
             </td>
-            <td className="px-6 py-3 text-sm text-gray-400" title={item.audience}>
-                {item.audience}
-            </td>
-            <td className="px-6 py-3 text-sm text-gray-400" title={item.freePress}>
-                {item.freePress}
+            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={stakeholderNames}>
+                {stakeholderNames}
             </td>
             <td className="px-6 py-3 text-sm text-gray-400 whitespace-nowrap">
                 {item.link ? (
@@ -85,11 +106,11 @@ const PressLogTableRow = ({ item, onEdit, onDelete, t }) => {
     );
 };
 
-// --- Cabecera de la Tabla ---
-const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, dataItems, t }) => {
+// --- Cabecera de la Tabla (ACTUALIZADO) ---
+const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, t }) => {
     const label = t(column.labelKey); 
 
-    if (column.key === 'actions') {
+    if (column.key === 'actions' || column.key === 'link') {
         return <th key={column.key} className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{label}</th>;
     }
     
@@ -101,7 +122,7 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
          options = filterOptions[column.optionsKey] || [];
     }
     
-    const isTextInputFilter = !column.optionsKey;
+    const isTextInputFilter = column.type === 'array' || !column.optionsKey; // Filtrar arrays con texto
 
     return (
         <th 
@@ -149,33 +170,63 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 };
 
 
-// --- Componente Principal de la Tabla ---
+// --- Componente Principal de la Tabla (ACTUALIZADO) ---
 const PressLogTable = ({ db, onOpenForm }) => {
     const { t } = useTranslation(); 
     const [commsItems, setCommsItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const [sort, setSort] = useState({ key: 'date', direction: 'desc' }); 
+    
+    // Mapas para convertir IDs a Nombres
+    const [agendaMap, setAgendaMap] = useState({});
+    const [stakeholderMap, setStakeholderMap] = useState({});
 
-    // 1. Data Fetching
+    // 1. Data Fetching (PressLog, Agenda, y MediaStakeholders)
     useEffect(() => {
-        if (!db) {
-            setIsLoading(true);
-            return;
-        }
-        setIsLoading(true); 
+        if (!db) return;
+        setIsLoading(true);
+        let itemsLoaded = 0;
+        const totalToLoad = 3;
+        
+        const checkDone = () => {
+            itemsLoaded++;
+            if (itemsLoaded === totalToLoad) setIsLoading(false);
+        };
 
         const commsRef = ref(db, getDbPaths().pressLog); 
+        const unsubComms = onValue(commsRef, (snapshot) => {
+            setCommsItems(snapshotToArray(snapshot));
+            checkDone();
+        }, (error) => { console.error("Press Log Subscription Error:", error); checkDone(); });
         
-        const unsubscribe = onValue(commsRef, (snapshot) => {
-            try {
-                const items = snapshotToArray(snapshot);
-                setCommsItems(items);
-                setIsLoading(false);
-            } catch (e) { console.error("Error processing Press Log snapshot:", e); setIsLoading(false); }
-        }, (error) => { console.error("Press Log Subscription Error:", error); setIsLoading(false); });
+        const agendaRef = ref(db, getDbPaths().agenda);
+        const unsubAgenda = onValue(agendaRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            const map = Object.keys(data).reduce((acc, key) => {
+                acc[key] = data[key].nombre;
+                return acc;
+            }, {});
+            setAgendaMap(map);
+            checkDone();
+        }, (error) => { console.error("Agenda Map Subscription Error:", error); checkDone(); });
         
-        return () => unsubscribe();
+        const stakeholderRef = ref(db, getDbPaths().mediaStakeholders);
+        const unsubStakeholders = onValue(stakeholderRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            const map = Object.keys(data).reduce((acc, key) => {
+                acc[key] = data[key].name;
+                return acc;
+            }, {});
+            setStakeholderMap(map);
+            checkDone();
+        }, (error) => { console.error("Stakeholder Map Subscription Error:", error); checkDone(); });
+
+        return () => {
+            unsubComms();
+            unsubAgenda();
+            unsubStakeholders();
+        };
     }, [db]);
 
 
@@ -185,20 +236,29 @@ const PressLogTable = ({ db, onOpenForm }) => {
             for (const column of PRESS_LOG_TABLE_COLUMNS) {
                 const key = column.key;
                 const filterValue = filters[key];
-                
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
-
+                
+                const fValue = filterValue.toLowerCase();
                 let itemValue = item[key] || '';
                 
+                if (key === 'agendaItems') {
+                    itemValue = (itemValue || [])
+                        .map(id => id === 'other' ? item.otherAgendaItem : agendaMap[id])
+                        .join(', ');
+                } else if (key === 'mediaEntries') {
+                    itemValue = (itemValue || []).map(e => `${e.name} ${e.format}`).join('; ');
+                } else if (key === 'mediaStakeholderKeys') {
+                    itemValue = (itemValue || []).map(id => stakeholderMap[id]).join(', ');
+                }
+
                 if (column.type === 'array') {
-                    itemValue = (itemValue || []).join(', ');
-                    if (!itemValue.toLowerCase().includes(filterValue.toLowerCase())) return false;
+                    if (!String(itemValue).toLowerCase().includes(fValue)) return false;
                 }
                 else if (column.optionsKey) {
                     if (itemValue !== filterValue) return false;
                 }
-                else if (typeof itemValue === 'string' || typeof itemValue === 'number') {
-                    if (!String(itemValue).toLowerCase().includes(filterValue.toLowerCase())) return false;
+                else if (typeof itemValue === 'string') {
+                    if (!String(itemValue).toLowerCase().includes(fValue)) return false;
                 }
             }
             return true;
@@ -213,7 +273,7 @@ const PressLogTable = ({ db, onOpenForm }) => {
         }
         
         return finalData;
-    }, [commsItems, filters, sort]);
+    }, [commsItems, filters, sort, agendaMap, stakeholderMap]);
 
     // Handler para eliminar
     const handleDelete = async (id) => {
@@ -250,9 +310,19 @@ const PressLogTable = ({ db, onOpenForm }) => {
                 const header = t(col.labelKey);
                 let value = item[col.key] || '';
                 
-                if (col.key === 'format') value = (value || []).join(', ');
-                if (col.key === 'activity') value = t(`press_log.activity_opts.${value.toLowerCase().replace(/ /g, '_')}`);
-                if (col.key === 'reach') value = t(`press_log.reach_opts.${value.toLowerCase()}`);
+                if (col.key === 'agendaItems') {
+                    value = (item.agendaItems || [])
+                        .map(id => id === 'other' ? item.otherAgendaItem : agendaMap[id])
+                        .join('; ');
+                } else if (col.key === 'mediaEntries') {
+                    value = (item.mediaEntries || []).map(e => `${e.name} (${e.format})`).join('; ');
+                } else if (col.key === 'mediaStakeholderKeys') {
+                    value = (item.mediaStakeholderKeys || []).map(id => stakeholderMap[id]).join('; ');
+                } else if (col.key === 'impact') {
+                    value = t(`press_log.impact_opts.${(item.impact || 'Neutral').toLowerCase()}`);
+                } else if (col.key === 'reach') {
+                    value = t(`press_log.reach_opts.${(item.reach || 'National').toLowerCase()}`);
+                }
                 
                 row[header] = value;
             });
@@ -318,7 +388,6 @@ const PressLogTable = ({ db, onOpenForm }) => {
                                     onFilterChange={handleFilterChange}
                                     filterOptions={PRESS_LOG_COLUMN_OPTIONS_MAP}
                                     currentFilters={filters}
-                                    dataItems={commsItems} 
                                     t={t} 
                                 />
                             ))}
@@ -333,6 +402,8 @@ const PressLogTable = ({ db, onOpenForm }) => {
                                     onEdit={() => onOpenForm(item)} 
                                     onDelete={() => handleDelete(item.id)} 
                                     t={t}
+                                    agendaMap={agendaMap}
+                                    stakeholderMap={stakeholderMap}
                                 />
                             ))
                         ) : (

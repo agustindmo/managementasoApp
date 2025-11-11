@@ -50,7 +50,7 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
 
     const ALL_VIEWS = [
         // Group: Members
-        { id: 'user_profile', labelKey: 'sidebar.user_profile', icon: User, requiredRole: ['admin', 'director', 'user'], group: 'members' },
+        { id: 'user_profile', labelKey: 'sidebar.user_profile', icon: User, requiredRole: ['director', 'user'], group: 'members' },
         { id: 'user_admin', labelKey: 'sidebar.user_admin', icon: Settings, requiredRole: ['admin'], group: 'members' },
         { id: 'admin_profiles', labelKey: 'sidebar.admin_profiles', icon: List, requiredRole: ['admin'], group: 'members' },
         { id: 'new_member_request', labelKey: 'sidebar.new_member_request', icon: UserPlus, requiredRole: ['admin'], group: 'members' },
@@ -68,11 +68,12 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         // Group: Communications
         { id: 'communications_log', labelKey: 'sidebar.communications_log', icon: MessageSquare, requiredRole: ['admin'], group: 'communications' }, 
         { id: 'press_log', labelKey: 'sidebar.press_log', icon: Megaphone, requiredRole: ['admin'], group: 'communications' },
-        // TAREA 8: Nuevo enlace de Media Stakeholder Map
-        { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin'], group: 'communications' },
+        { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin', 'director'], group: 'communications' },
 
         // Group: Finance
-        { id: 'finance_dashboard', labelKey: 'sidebar.finance_dashboard', icon: DollarSign, requiredRole: ['admin'], group: 'finance' },
+        // --- MODIFICADO: 'director' puede ver el dashboard ---
+        { id: 'finance_dashboard', labelKey: 'sidebar.finance_dashboard', icon: DollarSign, requiredRole: ['admin', 'director'], group: 'finance' },
+        // --- MODIFICADO: 'director' YA NO puede ver las relaciones ---
         { id: 'finance_relations', labelKey: 'sidebar.finance_relations', icon: Handshake, requiredRole: ['admin'], group: 'finance' },
     ];
 

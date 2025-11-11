@@ -23,7 +23,7 @@ const snapshotToArray = (snapshot) => {
 };
 
 // --- Fila de la Tabla ---
-const AuditTableRow = ({ item, onEdit, onDelete, t }) => {
+const AuditTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => { // <-- isAdmin prop
     return (
         <tr className="hover:bg-sky-900/60 transition-colors">
             <td className="px-6 py-3 text-sm text-gray-400 whitespace-nowrap">{item.startDate} / {item.endDate}</td>
@@ -32,22 +32,24 @@ const AuditTableRow = ({ item, onEdit, onDelete, t }) => {
             <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={item.results}>{item.results}</td>
             <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={item.observations}>{item.observations}</td>
             <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex space-x-2 justify-end">
-                    <button
-                        onClick={onEdit}
-                        className="text-sky-400 hover:text-sky-200 p-1 rounded-full hover:bg-sky-800/50 transition"
-                        title={t('activity.form.edit_title')}
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={onDelete}
-                        className="text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
-                        title={t('admin.reject')}
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                {isAdmin && (
+                    <div className="flex space-x-2 justify-end">
+                        <button
+                            onClick={onEdit}
+                            className="text-sky-400 hover:text-sky-200 p-1 rounded-full hover:bg-sky-800/50 transition"
+                            title={t('activity.form.edit_title')}
+                        >
+                            <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={onDelete}
+                            className="text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
+                            title={t('admin.reject')}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
             </td>
         </tr>
     );
@@ -116,8 +118,9 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 
 
 // --- Componente Principal de la Tabla ---
-const FinanceAuditTable = ({ db, onOpenForm }) => {
+const FinanceAuditTable = ({ db, onOpenForm, role }) => { // <-- role prop
     const { t } = useTranslation(); 
+    const isAdmin = role === 'admin'; // <-- Check role
     
     const dbPathKey = 'financeAudits';
     const filterOptionsMap = AUDIT_COLUMN_OPTIONS_MAP;
@@ -182,7 +185,7 @@ const FinanceAuditTable = ({ db, onOpenForm }) => {
 
     // Handler para eliminar
     const handleDelete = async (id) => {
-        if (db && window.confirm(t('policy.confirm_delete'))) { 
+        if (db && isAdmin && window.confirm(t('policy.confirm_delete'))) { // <-- Check admin
             try {
                 const itemRef = ref(db, `${getDbPaths()[dbPathKey]}/${id}`);
                 await remove(itemRef); 
@@ -250,22 +253,27 @@ const FinanceAuditTable = ({ db, onOpenForm }) => {
                     </h2>
                 </div>
                 <div className="flex space-x-2">
-                    <button
-                        onClick={handleDownloadXLSX}
-                        className="flex items-center space-x-2 bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-600 transition shadow-md"
-                        title={t('policy.download_xlsx')} 
-                    >
-                        <Download className="w-4 h-4" />
-                        <span>{t('policy.download_xlsx')}</span> 
-                    </button>
-                    <button
-                        onClick={() => onOpenForm(null)}
-                        className="flex items-center space-x-2 bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition shadow-md"
-                        title={t(addKey)}
-                    >
-                        <PlusCircle className="w-4 h-4" />
-                        <span>{t(addKey)}</span>
-                    </button>
+                    {/* --- MODIFICADO: Botón de descarga y Añadir ahora son condicionales --- */}
+                    {isAdmin && (
+                        <>
+                            <button
+                                onClick={handleDownloadXLSX}
+                                className="flex items-center space-x-2 bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-600 transition shadow-md"
+                                title={t('policy.download_xlsx')} 
+                            >
+                                <Download className="w-4 h-4" />
+                                <span>{t('policy.download_xlsx')}</span> 
+                            </button>
+                            <button
+                                onClick={() => onOpenForm(null)}
+                                className="flex items-center space-x-2 bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition shadow-md"
+                                title={t(addKey)}
+                            >
+                                <PlusCircle className="w-4 h-4" />
+                                <span>{t(addKey)}</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
             
@@ -274,16 +282,19 @@ const FinanceAuditTable = ({ db, onOpenForm }) => {
                     <thead className="bg-sky-900/70">
                         <tr>
                             {AUDIT_TABLE_COLUMNS.map(column => (
-                                <TableHeaderWithControls
-                                    key={column.key}
-                                    column={column}
-                                    currentSort={sort}
-                                    onSortChange={handleSortChange}
-                                    onFilterChange={handleFilterChange}
-                                    filterOptions={filterOptionsMap}
-                                    currentFilters={filters}
-                                    t={t} 
-                                />
+                                // --- MODIFICADO: Ocultar la columna de acciones si no es admin ---
+                                (isAdmin || column.key !== 'actions') && (
+                                    <TableHeaderWithControls
+                                        key={column.key}
+                                        column={column}
+                                        currentSort={sort}
+                                        onSortChange={handleSortChange}
+                                        onFilterChange={handleFilterChange}
+                                        filterOptions={filterOptionsMap}
+                                        currentFilters={filters}
+                                        t={t} 
+                                    />
+                                )
                             ))}
                         </tr>
                     </thead>
@@ -296,10 +307,11 @@ const FinanceAuditTable = ({ db, onOpenForm }) => {
                                     onEdit={() => onOpenForm(item)} 
                                     onDelete={() => handleDelete(item.id)} 
                                     t={t}
+                                    isAdmin={isAdmin} // <-- Pass prop
                                 />
                             ))
                         ) : (
-                            <tr><td colSpan={AUDIT_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-gray-500">{t('press_log.no_records')}</td></tr>
+                            <tr><td colSpan={isAdmin ? AUDIT_TABLE_COLUMNS.length : AUDIT_TABLE_COLUMNS.length - 1} className="px-6 py-4 text-center text-gray-500">{t('press_log.no_records')}</td></tr>
                         )}
                     </tbody>
                 </table>
