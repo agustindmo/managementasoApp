@@ -198,8 +198,9 @@ export const POSITION_SCORE_MAP = {
 };
 
 // Constantes para Log de Prensa
-export const PRESS_LOG_ACTIVITY_OPTIONS = [
-    "Press Release", "Interview", "Social Media Post", "News Conference", "Other"
+// --- TASK 1: Added PRESS_LOG_ACTION_OPTIONS ---
+export const PRESS_LOG_ACTION_OPTIONS = [
+    "Interview", "Press Release", "Press Conference", "Meetings", "Training"
 ];
 export const PRESS_LOG_FORMAT_OPTIONS = [
     "Online", "Newspaper", "Radio", "TV", "Other"
@@ -211,6 +212,8 @@ export const IMPACT_OPTIONS = ["Positive", "Neutral", "Negative"];
 
 export const INITIAL_PRESS_LOG_STATE = {
     date: new Date().toISOString().slice(0, 10),
+    // --- TASK 1: Added 'action' ---
+    action: PRESS_LOG_ACTION_OPTIONS[0],
     agendaItems: [], 
     otherAgendaItem: '', 
     mediaEntries: [], 
@@ -219,16 +222,16 @@ export const INITIAL_PRESS_LOG_STATE = {
     audience: '',
     freePress: '',
     link: '',
-    mediaStakeholderKeys: [], 
 };
 
 export const PRESS_LOG_TABLE_COLUMNS = [
     { labelKey: "press_log.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
+    // --- TASK 1: Added 'action' column ---
+    { labelKey: "press_log.col.action", key: "action", sortable: true, filterable: true, optionsKey: 'action', type: 'string' },
     { labelKey: "press_log.col.agenda_items", key: "agendaItems", sortable: false, filterable: true, type: 'array' },
     { labelKey: "press_log.col.media_entries", key: "mediaEntries", sortable: false, filterable: true, type: 'array' },
     { labelKey: "press_log.col.impact", key: "impact", sortable: true, filterable: true, optionsKey: 'impact', type: 'string' },
     { labelKey: "press_log.col.reach", key: "reach", sortable: true, filterable: true, optionsKey: 'reach', type: 'string' },
-    { labelKey: "press_log.col.stakeholders", key: "mediaStakeholderKeys", sortable: false, filterable: true, type: 'array' },
     { labelKey: "press_log.col.link", key: "link", sortable: false, filterable: false, type: 'string' },
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
@@ -236,6 +239,8 @@ export const PRESS_LOG_TABLE_COLUMNS = [
 export const PRESS_LOG_COLUMN_OPTIONS_MAP = {
     impact: IMPACT_OPTIONS,
     reach: PRESS_LOG_REACH_OPTIONS,
+    // --- TASK 1: Added 'action' options ---
+    action: PRESS_LOG_ACTION_OPTIONS,
 };
 
 
@@ -245,6 +250,8 @@ export const MEDIA_SCOPE_OPTIONS = ["National", "International", "Local", "Provi
 
 export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
     name: '',
+    email: '',
+    phone: '',
     type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS[0], // Default a 'Online'
     scope: MEDIA_SCOPE_OPTIONS[0], // Default a 'National'
     position: STAKEHOLDER_POSITION_OPTIONS[2], // Default a 'Neutral'
@@ -252,6 +259,8 @@ export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
 
 export const MEDIA_STAKEHOLDER_TABLE_COLUMNS = [
     { labelKey: "stakeholder.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "stakeholder.col.email", key: "email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "stakeholder.col.phone", key: "phone", sortable: true, filterable: true, type: 'string' },
     { labelKey: "stakeholder.col.type", key: "type", sortable: true, filterable: true, optionsKey: 'type' }, 
     { labelKey: "stakeholder.col.position", key: "position", sortable: true, filterable: true, optionsKey: 'position' },
     { labelKey: "stakeholder.col.scope", key: "scope", sortable: true, filterable: true, optionsKey: 'scope' },
@@ -594,17 +603,20 @@ export const PUBLIC_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
     position: STAKEHOLDER_POSITION_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
     role: STAKEHOLDER_ROLE_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
 };
+
+// --- TASK 6: Updated Commission Constants ---
 export const INITIAL_COMMISSION_STATE = {
     name: '',
     scope: '',
-    memberKeys: [], // Array of user IDs (uids)
+    members: [], // Changed from memberKeys (array of strings) to members (array of objects)
 };
 export const COMMISSION_TABLE_COLUMNS = [
     { labelKey: "commission.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
     { labelKey: "commission.col.scope", key: "scope", sortable: false, filterable: true, type: 'string' },
-    { labelKey: "commission.col.members", key: "memberKeys", sortable: false, filterable: true, type: 'array' },
+    { labelKey: "commission.col.members", key: "members", sortable: false, filterable: true, type: 'array' }, // Changed key from memberKeys
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
+// --- End Task 6 Changes ---
 
 export const INITIAL_LEGAL_DOCUMENT_STATE = {
     name: '',

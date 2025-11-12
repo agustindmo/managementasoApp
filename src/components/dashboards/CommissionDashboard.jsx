@@ -21,20 +21,7 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-const snapshotToUserMap = (profileSnapshot, roleSnapshot) => {
-    const profiles = profileSnapshot.val() || {};
-    const roles = roleSnapshot.val() || {};
-    
-    return Object.keys(profiles).reduce((acc, uid) => {
-        acc[uid] = {
-            id: uid,
-            name: profiles[uid].representative || 'N/A',
-            company: profiles[uid].company || 'N/A',
-            email: roles[uid]?.email || 'N/A'
-        };
-        return acc;
-    }, {});
-};
+// --- TASK 6: Removed snapshotToUserMap ---
 
 // --- Cabecera de la Tabla ---
 const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, currentFilters, t, isAdmin }) => {
@@ -78,17 +65,19 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 };
 
 // --- Fila de la Tabla ---
-const CommissionTableRow = ({ item, onEdit, onDelete, t, isAdmin, userMap }) => {
+// --- TASK 6: Removed userMap prop ---
+const CommissionTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => {
     
-    const memberNames = (item.memberKeys || [])
-        .map(key => userMap[key]?.name || 'Desconocido')
+    // --- TASK 6: Read names directly from the 'members' array of objects ---
+    const memberNames = (item.members || [])
+        .map(member => member.name || 'N/A')
         .join(', ');
     
     return (
         <tr className="hover:bg-sky-900/60 transition-colors">
             <td className="px-6 py-2 text-sm font-medium text-white truncate max-w-[200px]" title={item.name}>{item.name}</td>
             <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[300px]" title={item.scope}>{item.scope}</td>
-            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[300px]" title={memberNames}>{memberNames}</td>
+            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[300px]" title={memberNames}>{memberNames || 'N/A'}</td>
             {isAdmin && (
                 <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex space-x-2 justify-end">
@@ -118,7 +107,7 @@ const CommissionTableRow = ({ item, onEdit, onDelete, t, isAdmin, userMap }) => 
 const CommissionDashboard = ({ db, userId, role }) => {
     const { t } = useTranslation();
     const [dataItems, setDataItems] = useState([]);
-    const [userMap, setUserMap] = useState({});
+    // --- TASK 6: Removed userMap state ---
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const [sort, setSort] = useState({ key: 'name', direction: 'asc' });
@@ -132,37 +121,18 @@ const CommissionDashboard = ({ db, userId, role }) => {
     useEffect(() => {
         if (!db) return;
         
-        let itemsLoaded = false;
-        let usersLoaded = false;
-        const checkDone = () => {
-            if (itemsLoaded && usersLoaded) setIsLoading(false);
-        };
-        
+        // --- TASK 6: Simplified fetch, removed user/profile loading ---
         const dataRef = ref(db, getDbPaths()[dbPathKey]);
         const unsubData = onValue(dataRef, (snapshot) => {
             setDataItems(snapshotToArray(snapshot));
-            itemsLoaded = true;
-            checkDone();
-        }, (err) => { console.error("Commissions subscription error:", err); itemsLoaded = true; checkDone(); });
-
-        // Cargar perfiles y roles para el mapa de usuarios
-        const profilesRef = ref(db, getDbPaths().userProfiles);
-        const rolesRef = ref(db, getDbPaths().userRoles);
-        let profilesSnap, rolesSnap;
-        const loadUserData = () => {
-            if (profilesSnap && rolesSnap) {
-                setUserMap(snapshotToUserMap(profilesSnap, rolesSnap));
-                usersLoaded = true;
-                checkDone();
-            }
-        };
-        const unsubProfiles = onValue(profilesRef, (snapshot) => { profilesSnap = snapshot; loadUserData(); });
-        const unsubRoles = onValue(rolesRef, (snapshot) => { rolesSnap = snapshot; loadUserData(); });
+            setIsLoading(false);
+        }, (err) => { 
+            console.error("Commissions subscription error:", err); 
+            setIsLoading(false); 
+        });
 
         return () => {
             unsubData();
-            unsubProfiles();
-            unsubRoles();
         };
     }, [db]);
 
@@ -171,14 +141,16 @@ const CommissionDashboard = ({ db, userId, role }) => {
         let finalData = dataItems;
         
         finalData = finalData.filter(item => {
-            const memberNames = (item.memberKeys || []).map(key => userMap[key]?.name || '').join(', ');
+            // --- TASK 6: Get member names from the new structure ---
+            const memberNames = (item.members || []).map(m => m.name || '').join(', ');
             
             for (const key in filters) {
                 const filterValue = filters[key]?.toLowerCase();
                 if (!filterValue) continue;
 
                 let itemValue;
-                if (key === 'memberKeys') {
+                // --- TASK 6: Filter on 'members' key ---
+                if (key === 'members') {
                     itemValue = memberNames;
                 } else {
                     itemValue = String(item[key] || '');
@@ -191,13 +163,23 @@ const CommissionDashboard = ({ db, userId, role }) => {
 
         if (sort.key) {
             finalData.sort((a, b) => {
-                const aValue = a[sort.key] || '';
-                const bValue = b[sort.key] || '';
+                // --- TASK 6: Handle sorting by 'members' key ---
+                let aValue = a[sort.key];
+                let bValue = b[sort.key];
+
+                if (sort.key === 'members') {
+                    aValue = (a.members || []).map(m => m.name).join(', ');
+                    bValue = (b.members || []).map(m => m.name).join(', ');
+                } else {
+                    aValue = aValue || '';
+                    bValue = bValue || '';
+                }
+
                 return (sort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
             });
         }
         return finalData;
-    }, [dataItems, filters, sort, userMap]);
+    }, [dataItems, filters, sort]); // --- TASK 6: Removed userMap dependency ---
 
     // Handlers
     const handleSortChange = (key) => {
@@ -304,7 +286,7 @@ const CommissionDashboard = ({ db, userId, role }) => {
                                         onDelete={() => handleDelete(item.id)} 
                                         t={t}
                                         isAdmin={isAdmin}
-                                        userMap={userMap}
+                                        // --- TASK 6: Removed userMap prop ---
                                     />
                                 ))
                             ) : (

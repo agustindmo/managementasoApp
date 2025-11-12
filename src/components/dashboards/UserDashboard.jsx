@@ -4,6 +4,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { getDbPaths } from '../../services/firebase.js';
 import { Loader2, TrendingUp, Filter, BarChart2 as SummaryIcon, Building, Briefcase, Users2 } from 'lucide-react'; 
+// --- Recharts components imported for the new chart ---
+import { 
+    ResponsiveContainer, 
+    BarChart, 
+    Bar, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip 
+} from 'recharts';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import { ANO_OPTIONS, ALL_YEAR_FILTER } from '../../utils/constants.js';
 import SelectField from '../ui/SelectField.jsx';
@@ -33,6 +43,19 @@ const MetricCard = ({ title, value, icon: Icon, colorClass }) => (
     </div>
 );
 
+// --- Custom Tooltip for Recharts ---
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="p-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                <p className="text-white font-semibold">{label}</p>
+                <p className="text-sky-400">{`Count: ${payload[0].value}`}</p>
+            </div>
+        );
+    }
+    return null;
+};
+
 const UserDashboardDisplay = ({ db }) => {
     const { t } = useTranslation();
     const [agendaItems, setAgendaItems] = useState([]);
@@ -61,7 +84,7 @@ const UserDashboardDisplay = ({ db }) => {
         return agendaItems.filter(item => item.ano === yearFilter);
     }, [agendaItems, yearFilter]);
 
-    const { metrics, institutionCounts, instrumentCounts, sectorCounts, totalAgendaItemsCount } = useMemo(() => {
+    const { metrics, institutionCounts, instrumentCounts, sectorCounts } = useMemo(() => {
         const totalAgendaItemsCount = filteredData.length;
         const inProcess = filteredData.filter(item => item.condicion === 'en seguimiento').length;
         const completed = totalAgendaItemsCount - inProcess;
@@ -73,7 +96,7 @@ const UserDashboardDisplay = ({ db }) => {
         filteredData.forEach(item => {
             
             // INSTITUTION LOGIC: Counting specific names
-            const instKey = item.institucion || '';
+            const instKey = item.institucion || 'N/A';
             if (instKey.trim() !== '') {
                 institutions[instKey.trim()] = (institutions[instKey.trim()] || 0) + 1;
             }
@@ -83,7 +106,7 @@ const UserDashboardDisplay = ({ db }) => {
             instruments[instrum] = (instruments[instrum] || 0) + 1;
             
             // Sector Logic 
-            const sectorKey = item.sector || '';
+            const sectorKey = item.sector || 'N/A';
             if (sectorKey.trim() !== '') {
                 sectors[sectorKey.trim()] = (sectors[sectorKey.trim()] || 0) + 1;
             }
@@ -94,7 +117,6 @@ const UserDashboardDisplay = ({ db }) => {
             institutionCounts: institutions,
             instrumentCounts: instruments,
             sectorCounts: sectors, 
-            totalAgendaItemsCount: totalAgendaItemsCount,
         };
     }, [filteredData]);
 
@@ -106,6 +128,14 @@ const UserDashboardDisplay = ({ db }) => {
     const instrumentChartData = useMemo(() => 
         Object.entries(instrumentCounts).map(([name, count]) => ({ name, count }))
     , [instrumentCounts]);
+    
+    // --- Data conversion for the new Institution Chart ---
+    const institutionChartData = useMemo(() => 
+        Object.entries(institutionCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => a.count - b.count) // Sort ascending for horizontal chart
+    , [institutionCounts]);
+
     
     // ... Loading UI ...
     if (isLoading) {
@@ -178,27 +208,36 @@ const UserDashboardDisplay = ({ db }) => {
             {/* Charts (With final spacing fix for Pie Chart) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
-                {/* 1. Institution Distribution (Custom Bar List) */}
+                {/* --- 1. Institution Distribution (IMPROVED WITH RECHARTS) --- */}
                 <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden h-96 flex flex-col">
                     <CardTitle title={t('user.metric.institution_title')} icon={Building} />
-                    <div className="p-4 flex-1 overflow-y-auto no-scrollbar">
-                        {Object.keys(institutionCounts).length > 0 && totalAgendaItemsCount > 0 ? (
-                            <div className="w-full space-y-3">
-                                {Object.entries(institutionCounts)
-                                    .sort(([, countA], [, countB]) => countB - countA)
-                                    .map(([institution, count]) => (
-                                        <div key={institution} className="flex items-center space-x-2">
-                                            <span className="text-xs w-16 truncate text-right text-gray-400">{count} {t('director.count')}</span>
-                                            <div className="flex-1 bg-sky-950/50 rounded-full h-3">
-                                                <div 
-                                                    className="bg-sky-500 h-3 rounded-full transition-all duration-500" 
-                                                    style={{ width: `${(count / totalAgendaItemsCount) * 100}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-sm flex-3 text-white truncate">{institution}</span>
-                                        </div>
-                                    ))}
-                            </div>
+                    <div className="p-4 flex-1">
+                        {institutionChartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={institutionChartData}
+                                    layout="vertical"
+                                    margin={{ top: 0, right: 10, left: 30, bottom: 0 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                                    <XAxis 
+                                        type="number" 
+                                        stroke="#9ca3af" 
+                                        allowDecimals={false} 
+                                        tick={{ fontSize: 12, fill: '#9ca3af' }} 
+                                    />
+                                    <YAxis
+                                        dataKey="name"
+                                        type="category"
+                                        stroke="#9ca3af"
+                                        width={100} // Adjust width for labels
+                                        tick={{ fontSize: 12, fill: '#e5e7eb' }}
+                                        tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value} // Truncate long labels
+                                    />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} />
+                                    <Bar dataKey="count" fill="#0ea5e9" barSize={15} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         ) : (<p className="text-gray-500 text-center">{t('user.no_data') || 'No data available.'}</p>)}
                     </div>
                 </div>

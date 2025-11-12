@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { BarChart2, Loader2, Target, LayoutList, Search, ArrowUp, ArrowDown } from 'lucide-react'; 
+// --- Recharts components imported for the new chart ---
+import { 
+    ResponsiveContainer, 
+    BarChart, 
+    Bar, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip 
+} from 'recharts';
 import { getDbPaths } from '../../services/firebase.js';
 import CardTitle from '../ui/CardTitle.jsx';
 import SelectField from '../ui/SelectField.jsx';
@@ -35,40 +45,64 @@ const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(numericValue);
 };
 
-// Horizontal Chart for OKRs
-const OKRHorizontalBarChart = ({ data, t }) => { // Tarea 2: Añadir t
-    const sortedCounts = Object.entries(data)
-        .sort(([, countA], [, countB]) => countB - countA);
+// --- Custom Tooltip for Recharts (Added for Task 2) ---
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="p-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                <p className="text-white font-semibold">{label}</p>
+                <p className="text-sky-400">{`Count: ${payload[0].value}`}</p>
+            </div>
+        );
+    }
+    return null;
+};
 
-    if (sortedCounts.length === 0) {
+
+// --- Horizontal Chart for OKRs (IMPROVED WITH RECHARTS for Task 2) ---
+const OKRHorizontalBarChart = ({ data, t }) => {
+    
+    // Convert object data to sorted array for Recharts
+    const chartData = useMemo(() =>
+        Object.entries(data)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => a.count - b.count) // Sort ascending for horizontal chart
+    , [data]);
+
+    if (chartData.length === 0) {
         return <p className="text-gray-500 text-center py-4">{t('objectives.no_okr_data')}</p>;
     }
-    
-    const maxCount = sortedCounts[0] ? sortedCounts[0][1] : 1; 
+
+    // Dynamically calculate chart height based on number of bars
+    const chartHeight = Math.max(200, chartData.length * 30 + 40); // 30px per bar + padding
 
     return (
-        <div className="p-6 space-y-4">
-            {sortedCounts.map(([okr, count]) => {
-                const barLength = (count / maxCount) * 100;
-                return (
-                    <div key={okr} className="flex flex-col">
-                        <div className="text-sm font-medium text-gray-200 mb-1 truncate" title={okr}>
-                            {okr}
-                        </div>
-                        <div className="flex items-center space-x-3">
-                            <div className="flex-1 bg-sky-950/50 rounded-full h-4">
-                                <div 
-                                    className="bg-sky-600 h-4 rounded-full transition-all duration-500" 
-                                    style={{ width: `${barLength}%` }}
-                                ></div>
-                            </div>
-                            <span className="text-lg font-bold text-sky-300 w-10 text-right">
-                                {count}
-                            </span>
-                        </div>
-                    </div>
-                );
-            })}
+        <div className="p-4" style={{ height: `${chartHeight}px` }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                    data={chartData}
+                    layout="vertical"
+                    margin={{ top: 0, right: 10, left: 30, bottom: 0 }}
+                >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                    <XAxis
+                        type="number"
+                        stroke="#9ca3af"
+                        allowDecimals={false}
+                        tick={{ fontSize: 12, fill: '#9ca3af' }}
+                    />
+                    <YAxis
+                        dataKey="name"
+                        type="category"
+                        stroke="#9ca3af"
+                        width={150} // Allocate space for labels
+                        tick={{ fontSize: 12, fill: '#e5e7eb' }}
+                        tickFormatter={(value) => value.length > 20 ? `${value.substring(0, 20)}...` : value} // Truncate long labels
+                    />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} />
+                    <Bar dataKey="count" fill="#0ea5e9" barSize={15} radius={[0, 4, 4, 0]} />
+                </BarChart>
+            </ResponsiveContainer>
         </div>
     );
 };
@@ -343,6 +377,7 @@ const ObjectivesDashboard = ({ db }) => {
             {/* Tarea 1: Contenedor oscuro para el gráfico */}
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8">
                 <CardTitle title={`${t('objectives.okr_breakdown')} (${yearFilter})`} icon={BarChart2} />
+                {/* --- This component was rewritten for Task 2 --- */}
                 <OKRHorizontalBarChart data={okrCounts} t={t} />
             </div>
         </div>

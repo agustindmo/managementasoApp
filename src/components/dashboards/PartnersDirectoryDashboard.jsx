@@ -1,8 +1,10 @@
 // src/components/dashboards/PartnersDirectoryDashboard.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ref, onValue } from 'firebase/database';
-import { Loader2, Handshake, ArrowUp, ArrowDown, Link } from 'lucide-react';
+// --- TASK 5: Added 'remove' ---
+import { ref, onValue, remove } from 'firebase/database';
+// --- TASK 5: Added new icons ---
+import { Loader2, Handshake, ArrowUp, ArrowDown, Link, PlusCircle, Edit, Trash2, X } from 'lucide-react';
 import { getDbPaths } from '../../services/firebase.js';
 import CardTitle from '../ui/CardTitle.jsx';
 import { 
@@ -11,6 +13,8 @@ import {
     PARTNER_COLUMN_OPTIONS_MAP
 } from '../../utils/constants.js';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
+// --- TASK 5: Import the form ---
+import FinancePartnerForm from '../forms/FinancePartnerForm.jsx';
 
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
@@ -25,6 +29,7 @@ const snapshotToArray = (snapshot) => {
 const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, t }) => {
     const label = t(column.labelKey); 
 
+    // --- TASK 5: Allow 'actions' column but don't make it sortable/filterable ---
     if (column.key === 'actions' || column.key === 'agreement_link') {
         return <th key={column.key} className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{label}</th>;
     }
@@ -83,12 +88,17 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
 };
 
 // --- Componente Principal del Dashboard ---
-const PartnersDirectoryDashboard = ({ db }) => {
+// --- TASK 5: Added userId and isAdmin props ---
+const PartnersDirectoryDashboard = ({ db, userId, isAdmin }) => {
     const { t } = useTranslation();
     const [partners, setPartners] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const [sort, setSort] = useState({ key: 'name', direction: 'asc' }); 
+
+    // --- TASK 5: State for modal ---
+    const [formVisible, setFormVisible] = useState(false);
+    const [currentPartner, setCurrentPartner] = useState(null);
 
     const dbPathKey = 'financePartners';
     const filterOptionsMap = PARTNER_COLUMN_OPTIONS_MAP;
@@ -113,7 +123,7 @@ const PartnersDirectoryDashboard = ({ db }) => {
         let finalData = partners.filter(item => {
             for (const column of PARTNER_TABLE_COLUMNS) {
                 const key = column.key;
-                if (key === 'actions') continue;
+                if (!column.filterable) continue; // Use filterable flag
                 
                 const filterValue = filters[key];
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
@@ -141,12 +151,40 @@ const PartnersDirectoryDashboard = ({ db }) => {
         return finalData;
     }, [partners, filters, sort]);
     
+    // --- TASK 5: Modal and Delete Handlers ---
+    const handleOpenForm = (partner = null) => {
+        setCurrentPartner(partner);
+        setFormVisible(true);
+    };
+
+    const handleCloseForm = () => {
+        setFormVisible(false);
+        setCurrentPartner(null);
+    };
+
+    const handleDelete = async (id) => {
+        if (!isAdmin) return;
+        if (!window.confirm(t('finance.relations.partner.confirm_delete') || 'Are you sure you want to delete this partner?')) return;
+        
+        try {
+            const itemRef = ref(db, `${getDbPaths()[dbPathKey]}/${id}`);
+            await remove(itemRef);
+            // Data will refetch via onValue
+        } catch (error) {
+            console.error("Error deleting partner:", error);
+            alert("Error: " + error.message);
+        }
+    };
+
     const handleSortChange = (key) => {
         setSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
     };
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
+
+    // --- TASK 5: Calculate visible columns for colspan ---
+    const visibleColumns = PARTNER_TABLE_COLUMNS.filter(col => col.key !== 'actions' || isAdmin).length;
 
     if (isLoading) {
         return (
@@ -159,10 +197,45 @@ const PartnersDirectoryDashboard = ({ db }) => {
     
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <h1 className="text-3xl font-bold text-white mb-6 flex items-center">
-                <Handshake className="w-8 h-8 mr-3 text-sky-400" />
-                {t('sidebar.partners_directory')}
-            </h1>
+
+            {/* --- TASK 5: Form Modal --- */}
+            {formVisible && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+                    <div className="relative w-full max-w-2xl bg-gray-900 border border-sky-700/50 rounded-2xl shadow-2xl p-6 m-4">
+                        <button 
+                            onClick={handleCloseForm}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                        <FinancePartnerForm
+                            userId={userId}
+                            db={db}
+                            role={isAdmin ? 'admin' : ''}
+                            mode={currentPartner ? 'edit' : 'add'}
+                            initialData={currentPartner}
+                            onClose={handleCloseForm}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* --- TASK 5: Updated Header with Add Button --- */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                <h1 className="text-3xl font-bold text-white flex items-center mb-4 sm:mb-0">
+                    <Handshake className="w-8 h-8 mr-3 text-sky-400" />
+                    {t('sidebar.partners_directory')}
+                </h1>
+                {isAdmin && (
+                    <button
+                        onClick={() => handleOpenForm(null)}
+                        className="flex-shrink-0 flex items-center justify-center px-4 py-2 bg-sky-600 text-white font-medium rounded-lg shadow-md hover:bg-sky-700 transition-colors"
+                    >
+                        <PlusCircle className="w-5 h-5 mr-2" />
+                        {t('finance.relations.partner.form_add') || 'Add Partner'}
+                    </button>
+                )}
+            </div>
             
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
                 <CardTitle title={`${t('sidebar.partners_directory')} (${filteredAndSortedItems.length})`} icon={Handshake} />
@@ -171,8 +244,9 @@ const PartnersDirectoryDashboard = ({ db }) => {
                     <table className="min-w-full divide-y divide-sky-800/50">
                         <thead className="bg-sky-900/70">
                             <tr>
+                                {/* --- TASK 5: Show/Hide Actions Column --- */}
                                 {PARTNER_TABLE_COLUMNS.map(column => (
-                                    column.key !== 'actions' && // Ocultar columna de acciones
+                                    (column.key !== 'actions' || isAdmin) && 
                                     <TableHeaderWithControls
                                         key={column.key}
                                         column={column}
@@ -207,10 +281,29 @@ const PartnersDirectoryDashboard = ({ db }) => {
                                                 </a>
                                             ) : 'N/A'}
                                         </td>
+                                        {/* --- TASK 5: Render Actions Cell --- */}
+                                        {isAdmin && (
+                                            <td className="px-6 py-3 text-sm text-gray-400 text-right whitespace-nowrap">
+                                                <button 
+                                                    onClick={() => handleOpenForm(item)} 
+                                                    className="p-1 text-sky-400 hover:text-sky-200 transition-colors mr-2"
+                                                    title={t('activity.table.edit')}
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDelete(item.id)} 
+                                                    className="p-1 text-red-500 hover:text-red-300 transition-colors"
+                                                    title={t('activity.table.delete')}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan={PARTNER_TABLE_COLUMNS.length - 1} className="px-6 py-4 text-center text-gray-500">{t('press_log.no_records')}</td></tr>
+                                <tr><td colSpan={visibleColumns} className="px-6 py-4 text-center text-gray-500">{t('press_log.no_records')}</td></tr>
                             )}
                         </tbody>
                     </table>
