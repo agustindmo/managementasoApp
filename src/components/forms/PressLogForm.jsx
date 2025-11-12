@@ -11,6 +11,7 @@ import {
     PRESS_LOG_FORMAT_OPTIONS,
     PRESS_LOG_REACH_OPTIONS,
     IMPACT_OPTIONS,
+    PRESS_LOG_ACTION_OPTIONS, // [New: Imported for action field]
 } from '../../utils/constants.js'; 
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
@@ -119,6 +120,7 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
     const isReady = !!db && !!userId;
     const dbPathKey = 'pressLog';
     
+    // [Fix/Correction: formTitle is correctly defined here inside the component scope]
     const formTitle = mode === 'edit' 
         ? t('press_log.form.edit_title')
         : t('press_log.form.add_title');
@@ -188,6 +190,7 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
         // --- TASK: Removed mediaStakeholderKeys from data payload ---
         const dataToSave = {
             date: formData.date,
+            action: formData.action, // [New: Added action field to data payload]
             agendaItems: formData.agendaItems || [],
             otherAgendaItem: formData.otherAgendaItem || '',
             mediaEntries: formData.mediaEntries || [],
@@ -249,6 +252,15 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
                     name="date" 
                     type="date"
                     value={String(formData.date ?? '')} 
+                    onChange={handleChange} 
+                />
+
+                {/* [New: Added SelectField for action] */}
+                <SelectField 
+                    label={t('press_log.col.action')} 
+                    name="action" 
+                    options={PRESS_LOG_ACTION_OPTIONS.map(opt => ({ value: opt, label: t(`press_log.action_opts.${opt.toLowerCase().replace(/ /g, '_')}`) }))}
+                    value={formData.action} 
                     onChange={handleChange} 
                 />
 

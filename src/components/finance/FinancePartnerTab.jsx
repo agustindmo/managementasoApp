@@ -13,7 +13,7 @@ import {
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
 import FinancePartnerForm from '../forms/FinancePartnerForm.jsx';
 // --- NUEVO: Importar gráfico ---
-import SimpleBarChart from '../charts/SimpleBarChart.jsx';
+// import SimpleBarChart from '../charts/SimpleBarChart.jsx'; // Removed chart import
 
 const snapshotToArray = (snapshot) => {
     // ... (código existente) ...
@@ -24,8 +24,6 @@ const snapshotToArray = (snapshot) => {
         ...val[key],
     }));
 };
-
-// --- ELIMINADO: PartnerBubbleChart ya no es necesario ---
 
 // --- Fila de la Tabla ---
 const PartnerTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => {
@@ -190,18 +188,7 @@ const FinancePartnersTab = ({ db, userId, role }) => {
     }, [partners, filters, sort]);
     
     // --- NUEVO: Formatear datos para el gráfico ---
-    const chartData = useMemo(() => {
-        const dataMap = partners.reduce((acc, partner) => {
-            const area = partner.area || 'Otro';
-            acc[area] = (acc[area] || 0) + 1;
-            return acc;
-        }, {});
-        
-        return Object.keys(dataMap).map(key => ({
-            name: key,
-            count: dataMap[key]
-        }));
-    }, [partners]);
+    // Removed chartData useMemo hook
 
     // Handlers
     // ... (código existente de handlers) ...
@@ -256,13 +243,8 @@ const FinancePartnersTab = ({ db, userId, role }) => {
     
     return (
         <div className="space-y-8">
-            {/* --- MODIFICADO: Usar SimpleBarChart --- */}
-            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-                <CardTitle title={`${t('finance.relations.partner.area_chart')} (${partners.length})`} icon={PieChart} />
-                <div className="p-4">
-                    <SimpleBarChart data={chartData} fillColor="#82ca9d" />
-                </div>
-            </div>
+            {/* --- MODIFICADO: Chart div removed --- */}
+            {/* The chart component previously rendered here has been eliminated. */}
         
             <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
                 <div className="flex items-center justify-between p-4 bg-sky-900/70 rounded-t-xl border-b border-sky-700/50">
@@ -274,7 +256,7 @@ const FinancePartnersTab = ({ db, userId, role }) => {
                     </div>
                     {isAdmin && (
                         <button
-                            onClick={() => onOpenForm(null)}
+                            onClick={() => handleOpenForm(null)} // Corrected from onOpenForm to handleOpenForm
                             className="flex items-center space-x-2 bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition shadow-md"
                             title={t('finance.relations.partner.form_add')}
                         >
@@ -308,7 +290,7 @@ const FinancePartnersTab = ({ db, userId, role }) => {
                                     <PartnerTableRow
                                         key={item.id}
                                         item={item}
-                                        onEdit={() => onOpenForm(item)} 
+                                        onEdit={() => handleOpenForm(item)} // Corrected from onOpenForm to handleOpenForm
                                         onDelete={() => handleDelete(item.id)} 
                                         t={t}
                                         isAdmin={isAdmin}
