@@ -8,15 +8,51 @@ import {
 } from 'recharts';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// Colores para el Treemap
-const COLORS = ['#0ea5e9', '#0284c7', '#0369a1', '#075985', '#0c4a6e', '#082f49', '#38bdf8', '#7dd3fc'];
+// --- MODIFIED: Diverse, High-Contrast Colors ---
+const COLORS = [
+    '#38bdf8', // Sky Blue
+    '#06b6d4', // Cyan
+    '#4ade80', // Green
+    '#facc15', // Yellow
+    '#fb923c', // Orange
+    '#f43f5e', // Rose
+    '#8b5cf6', // Violet
+    '#64748b', // Slate
+];
 
 // Componente de contenido personalizado para el Treemap
 const CustomizedTreemapContent = (props) => {
-    const { root, depth, x, y, width, height, index, payload, name, size } = props;
+    const { root, depth, x, y, width, height, index, payload, name, value } = props; 
+    const size = value; 
 
-    // No renderizar la raíz, solo los hijos
-    if (depth === 0) return null;
+    // Do not render the root or boxes too small to contain anything
+    if (depth === 0 || width < 25 || height < 15) return null;
+
+    // --- Dynamic Font Size and Truncation Logic (Kept from previous fix) ---
+    const NAME_CHAR_RATIO = 0.6; 
+    const PADDING = 10;
+    
+    const maxFontSizeWidth = (width - PADDING) / (name.length * NAME_CHAR_RATIO);
+    const maxFontSizeHeight = (height - PADDING) / 2; 
+
+    const calculatedFontSize = Math.min(12, maxFontSizeWidth, maxFontSizeHeight); 
+    const finalFontSize = Math.max(8, calculatedFontSize); 
+    
+    // Truncate name
+    let displayName = name;
+    if (finalFontSize < 12) {
+        const maxChars = Math.floor((width - PADDING) / (finalFontSize * NAME_CHAR_RATIO));
+        if (name.length > maxChars && maxChars > 5) {
+            displayName = name.substring(0, maxChars - 2) + '...';
+        } else if (name.length > maxChars && maxChars <= 5) {
+            displayName = name.substring(0, maxChars);
+        }
+    }
+
+    // Height calculation for rendering
+    const nameY = y + height / 2 - (finalFontSize / 2);
+    const valueY = y + height / 2 + (finalFontSize * 0.8);
+    const renderCount = height > 40; 
 
     return (
         <g>
@@ -26,22 +62,35 @@ const CustomizedTreemapContent = (props) => {
                 width={width}
                 height={height}
                 style={{
-                    fill: COLORS[index % COLORS.length],
+                    fill: COLORS[index % COLORS.length], // Uses diverse COLORS
                     stroke: '#000',
                     strokeWidth: 2,
                     strokeOpacity: 0.5,
                 }}
             />
-            {width > 80 && height > 25 ? (
+            {/* Stakeholder Name (Primary Label) */}
+            <text
+                x={x + width / 2}
+                y={nameY}
+                textAnchor="middle"
+                fill="#fff"
+                fontSize={finalFontSize}
+                fontWeight="500" // MODIFIED: Lighter font weight for better readability
+            >
+                {displayName}
+            </text>
+            
+            {/* Engagement Count (Secondary Label) */}
+            {renderCount ? ( 
                 <text
                     x={x + width / 2}
-                    y={y + height / 2 + 7}
+                    y={valueY} 
                     textAnchor="middle"
                     fill="#fff"
-                    fontSize={14}
-                    fontWeight="bold"
+                    fontSize={Math.max(8, finalFontSize * 0.8)} 
+                    opacity={0.8}
                 >
-                    {name}
+                    ({size})
                 </text>
             ) : null}
         </g>
@@ -53,7 +102,7 @@ const RechartsTreemap = ({ data }) => {
     const { t } = useTranslation();
 
     if (!data || data.length === 0) {
-        return <p className="text-gray-500 text-center py-4">{t('agenda.no_data')}</p>;
+        return <p className="text-gray-500 text-center py-4">{t('agenda.no_data') || 'No data available.'}</p>;
     }
 
     return (
@@ -61,7 +110,7 @@ const RechartsTreemap = ({ data }) => {
             <ResponsiveContainer>
                 <Treemap
                     data={data}
-                    dataKey="size"
+                    dataKey="value"
                     ratio={4 / 3}
                     stroke="#fff"
                     fill="#8884d8"
@@ -74,7 +123,7 @@ const RechartsTreemap = ({ data }) => {
                             borderRadius: '8px' 
                         }} 
                         labelStyle={{ color: '#e0f2fe' }}
-                        formatter={(value, name) => [value, t('stakeholder.col.total_engagements')]}
+                        formatter={(value, name) => [value, t('stakeholder.col.total_engagements') || 'Total Engagements']}
                     />
                 </Treemap>
             </ResponsiveContainer>

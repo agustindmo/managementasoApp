@@ -282,8 +282,9 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
                     />
                 </div>
                 
-                {/* --- NUEVOS CAMPOS --- */}
+                {/* --- UPDATED FIELD BLOCK --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* call_link is kept and is optional (no required prop) */}
                     <InputField 
                         label={t('governance.meeting.col.call_link')} 
                         name="call_link" 
@@ -291,15 +292,9 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
                         value={String(formData.call_link ?? '')} 
                         onChange={handleChange} 
                         disabled={!isAdmin}
+                        // Removed required={true} if it existed; it's optional now.
                     />
-                    <InputField 
-                        label={t('governance.meeting.col.minute_link')} 
-                        name="minute_link" 
-                        type="url" 
-                        value={String(formData.minute_link ?? '')} 
-                        onChange={handleChange} 
-                        disabled={!isAdmin}
-                    />
+                    {/* minute_link InputField is REMOVED */}
                 </div>
                 
                 <TagInput

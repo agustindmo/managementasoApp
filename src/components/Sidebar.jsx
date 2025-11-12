@@ -66,7 +66,10 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
         { id: 'objectivos', labelKey: 'sidebar.objectives', icon: Target, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
         { id: 'agenda_view', labelKey: 'sidebar.agenda_view', icon: Calendar, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
         { id: 'stakeholder_map', labelKey: 'sidebar.stakeholder_map', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs' },
-        { id: 'events', labelKey: 'sidebar.events', icon: Calendar, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'public_affairs' },
+        // Removed events from Public Affairs
+
+        // Group: Events (NEW SECTION)
+        { id: 'events', labelKey: 'sidebar.events', icon: Calendar, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'events_group' },
 
         // Group: Communications
         { id: 'communications_log', labelKey: 'sidebar.communications_log', icon: MessageSquare, requiredRole: ['admin'], group: 'communications' }, 
@@ -95,6 +98,7 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role }) => {
     const groups = {
         members: { title: t('sidebar.members'), items: visibleItems.filter(i => i.group === 'members') },
         public_affairs: { title: t('sidebar.public_affairs'), items: visibleItems.filter(i => i.group === 'public_affairs') },
+        events_group: { title: t('sidebar.events_group'), items: visibleItems.filter(i => i.group === 'events_group') }, // NEW GROUP ADDED
         communications: { title: t('sidebar.communications'), items: visibleItems.filter(i => i.group === 'communications') },
         database: { title: t('sidebar.database'), items: visibleItems.filter(i => i.group === 'database') }, 
         governance: { title: t('sidebar.governance'), items: visibleItems.filter(i => i.group === 'governance') },

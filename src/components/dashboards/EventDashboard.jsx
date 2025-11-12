@@ -6,8 +6,50 @@ import { Calendar, Loader2, PlusCircle, Users, Clock, Tag, Link } from 'lucide-r
 import { getDbPaths } from '../../services/firebase.js';
 import { useTranslation } from '../../context/TranslationContext.jsx';
 import CardTitle from '../ui/CardTitle.jsx';
-import EventForm from '../forms/EventForm.jsx'; // Importar el formulario
+import EventForm from '../forms/EventForm.jsx';
+import SelectField from '../ui/SelectField.jsx'; 
+// Assuming constants from user's project
+const ALL_YEAR_FILTER = 'ALL';
+const ANO_OPTIONS = ['2023', '2024', '2025']; // Placeholder/Example, use actual options
 
+// --- Date Utility Functions (REPLACING Moment.js) ---
+
+// Helper to normalize a date string to a Date object at start of day
+const normalizeDate = (dateString) => {
+    const d = new Date(dateString);
+    d.setHours(0, 0, 0, 0); // Set to start of day
+    return d;
+};
+
+// Checks if dateA is the same as or after dateB
+const isSameOrAfter = (dateA, dateB) => {
+    return normalizeDate(dateA).getTime() >= normalizeDate(dateB).getTime();
+};
+
+// Calculates the end of the current week (Sunday)
+const getEndOfWeek = (date) => {
+    const d = normalizeDate(date);
+    const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+    const diff = d.getDate() + (6 - day); // Add days until Saturday (6) or subtract until Sunday (0)
+    d.setDate(diff);
+    return d;
+};
+
+// Calculates the end of the current month
+const getEndOfMonth = (date) => {
+    const d = normalizeDate(date);
+    d.setMonth(d.getMonth() + 1, 0); // Set to the last day of the current month
+    return d;
+};
+
+// Calculates the end of the current year
+const getEndOfYear = (date) => {
+    const d = normalizeDate(date);
+    d.setMonth(11, 31); // Set to December 31st
+    return d;
+};
+
+// --- Component Helpers ---
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
     const val = snapshot.val();
@@ -17,8 +59,8 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// --- Componente de Tarjeta de Evento (ACTUALIZADO) ---
-const EventCard = ({ event, t }) => {
+// --- Componente de Tarjeta de Evento (MODIFIED: Removed minute_link display) ---
+const EventCard = ({ event, t, isPast = false }) => {
     const { 
         name, 
         startDate, 
@@ -28,8 +70,7 @@ const EventCard = ({ event, t }) => {
         eventType, 
         topics = [], 
         participants = [],
-        call_link, // Nuevo
-        minute_link // Nuevo
+        call_link, 
     } = event;
 
     const formatDate = (date) => {
@@ -45,12 +86,13 @@ const EventCard = ({ event, t }) => {
         ? formatDate(startDate) 
         : `${formatDate(startDate)} - ${formatDate(endDate)}`;
 
+    const statusColor = isPast ? 'text-gray-400' : 'text-green-400';
+
     return (
         <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden flex flex-col">
             <div className="p-4 bg-sky-900/70 border-b border-sky-700/50">
-                <h3 className="text-lg font-bold text-white">{name}</h3>
+                <h3 className={`text-lg font-bold ${statusColor}`}>{name}</h3>
                 <span className="text-xs font-medium bg-sky-600 text-white px-2 py-0.5 rounded-full">
-                    {/* Traducir el tipo de reunión si es de gobernanza */}
                     {t(`governance.meeting.type.${eventType.toLowerCase()}`) || eventType}
                 </span>
             </div>
@@ -58,10 +100,9 @@ const EventCard = ({ event, t }) => {
             <div className="p-4 space-y-3 flex-grow">
                 <div className="flex items-center text-gray-300">
                     <Calendar className="w-4 h-4 mr-2 text-sky-400" />
-                    <span className="text-sm">{dateString}</span>
+                    <span className="text-sm">{dateString} at {startTime || t('event.no_time')}</span>
                 </div>
                 
-                {/* Ocultar horas si no están definidas (para reuniones de gobernanza) */}
                 {startTime && endTime && (
                     <div className="flex items-center text-gray-300">
                         <Clock className="w-4 h-4 mr-2 text-sky-400" />
@@ -92,17 +133,12 @@ const EventCard = ({ event, t }) => {
                 )}
             </div>
             
-            {/* --- NUEVO: Mostrar Enlaces de Reunión --- */}
-            {(call_link || minute_link) && (
+            {/* --- MODIFIED: ONLY SHOW CALL LINK (minute_link display removed) --- */}
+            {(call_link) && (
                 <div className="p-4 border-t border-sky-800/50 space-y-2">
                     {call_link && (
                          <a href={call_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition flex items-center text-sm">
-                            <Link className="w-4 h-4 mr-1" /> {t('governance.meeting.col.call_link')}
-                        </a>
-                    )}
-                    {minute_link && (
-                         <a href={minute_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition flex items-center text-sm">
-                            <Link className="w-4 h-4 mr-1" /> {t('governance.meeting.col.minute_link')}
+                            <Link className="w-4 h-4 mr-1" /> {t('governance.meeting.col.call_link') || 'Call Link'}
                         </a>
                     )}
                 </div>
@@ -111,18 +147,22 @@ const EventCard = ({ event, t }) => {
     );
 };
 
-// --- Componente Principal del Dashboard (ACTUALIZADO) ---
+// --- Componente Principal del Dashboard (FILTERS ADDED) ---
 const EventDashboard = ({ userId, db, role }) => { 
     const { t } = useTranslation();
     const [view, setView] = useState('cards'); // 'cards' or 'form'
     const [activeRecord, setActiveRecord] = useState(null); 
     const [events, setEvents] = useState([]);
-    const [govMeetings, setGovMeetings] = useState([]); // --- NUEVO ---
+    const [govMeetings, setGovMeetings] = useState([]); 
     const [isLoading, setIsLoading] = useState(true);
+    
+    // NEW FILTER STATES
+    const [yearFilter, setYearFilter] = useState(ALL_YEAR_FILTER);
+    const [timeScope, setTimeScope] = useState('upcoming'); // week, month, year, upcoming
     
     const isAdmin = role === 'admin';
     
-    // 1. Cargar Eventos Y Reuniones de Gobernanza
+    // 1. Cargar Eventos Y Reuniones de Gobernanza (unchanged)
     useEffect(() => {
         if (!db) return;
         
@@ -152,64 +192,81 @@ const EventDashboard = ({ userId, db, role }) => {
         };
     }, [db]);
 
-    // 2. Unir y Filtrar Eventos por Visibilidad
-    const visibleEvents = useMemo(() => {
-        // Normalizar eventos
+    // 2. Unir, Filtrar por Visibilidad, SEPARAR por Tiempo, y Aplicar Filtros de Scope
+    const { upcomingEvents, pastEvents } = useMemo(() => {
+        const today = normalizeDate(new Date());
+
+        // 2a. Unir y Filtrar por Visibilidad (Existing Logic)
         const normalizedEvents = events.map(e => ({
             ...e, 
             sortDate: e.startDate,
         }));
-        
-        // Normalizar reuniones de gobernanza
         const normalizedMeetings = govMeetings.map(m => ({
-            id: m.id,
-            name: m.name,
-            startDate: m.date,
-            endDate: m.date,
-            startTime: null, // No tienen hora
-            endTime: null,
-            eventType: m.type, // "Board", "Committee", "Assembly"
-            topics: [],
-            participants: [],
-            visibility: m.type, // Usar el tipo para la visibilidad
-            call_link: m.call_link,
-            minute_link: m.minute_link,
-            sortDate: m.date,
+            id: m.id, name: m.name, startDate: m.date, endDate: m.date,
+            startTime: null, endTime: null, eventType: m.type, 
+            topics: [], participants: [], visibility: m.type, 
+            call_link: m.call_link, minute_link: m.minute_link, sortDate: m.date,
         }));
         
-        const allItems = [...normalizedEvents, ...normalizedMeetings];
+        let allItems = [...normalizedEvents, ...normalizedMeetings];
 
-        // Filtrar por rol
-        const filtered = allItems.filter(item => {
+        // Filter by role (Existing Logic)
+        allItems = allItems.filter(item => {
             if (isAdmin) return true;
-            
-            const visibility = item.visibility; // 'all', 'directors', 'users', 'Assembly', 'Board', 'Committee'
-            
+            const visibility = item.visibility;
             if (role === 'director' || role === 'directorinvitee') {
                 return ['all', 'directors', 'Assembly', 'Board', 'Committee'].includes(visibility);
             }
             if (role === 'user' || role === 'userinvitee') {
-                // Usuarios solo ven 'all', 'users', y 'Assembly'
                 return ['all', 'users', 'Assembly'].includes(visibility);
             }
             return false;
         });
-        
-        // Ordenar por fecha más reciente
-        return filtered.sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate));
 
-    }, [events, govMeetings, role, isAdmin]);
+        // 2b. Apply Year Filter
+        if (yearFilter !== ALL_YEAR_FILTER) {
+            allItems = allItems.filter(item => item.sortDate && new Date(item.sortDate).getFullYear().toString() === yearFilter);
+        }
+
+        // 2c. Separate Upcoming and Past Events
+        const upcoming = allItems.filter(item => isSameOrAfter(item.sortDate, today));
+        const past = allItems.filter(item => !isSameOrAfter(item.sortDate, today));
+
+        // 2d. Apply Time Scope Filter to UPCOMING events only
+        let scopedUpcoming = upcoming;
+        const todayString = new Date().toISOString().slice(0, 10);
+        
+        if (timeScope === 'week') {
+            const endOfWeek = getEndOfWeek(todayString);
+            scopedUpcoming = upcoming.filter(e => isSameOrAfter(endOfWeek, e.sortDate));
+        } else if (timeScope === 'month') {
+            const endOfMonth = getEndOfMonth(todayString);
+            scopedUpcoming = upcoming.filter(e => isSameOrAfter(endOfMonth, e.sortDate));
+        } else if (timeScope === 'year') {
+            const endOfYear = getEndOfYear(todayString);
+            scopedUpcoming = upcoming.filter(e => isSameOrAfter(endOfYear, e.sortDate));
+        }
+        // Note: 'upcoming' scope means all future events (default)
+
+        // Sort upcoming ascending, past descending
+        const dateSort = (a, b) => normalizeDate(a.sortDate).getTime() - normalizeDate(b.sortDate).getTime();
+        const sortedUpcoming = scopedUpcoming.sort(dateSort);
+        const sortedPast = past.sort((a, b) => dateSort(b, a)); // Newest past events first
+
+        return { upcomingEvents: sortedUpcoming, pastEvents: sortedPast };
+
+    }, [events, govMeetings, role, isAdmin, yearFilter, timeScope]);
 
 
     const handleOpenForm = (record = null) => {
-        if (!isAdmin) return; // Solo admins pueden abrir el formulario
+        if (!isAdmin) return; 
         setActiveRecord(record);
         setView('form');
     };
 
     const handleCloseForm = () => {
         setActiveRecord(null);
-        setView('cards'); // Volver a la vista de tarjetas
+        setView('cards'); 
     };
 
     if (isLoading) {
@@ -241,7 +298,7 @@ const EventDashboard = ({ userId, db, role }) => {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold text-white flex items-center">
                     <Calendar className="w-8 h-8 mr-3 text-sky-400" />
-                    {t('sidebar.events')}
+                    {t('sidebar.events') || 'Events'}
                 </h1>
                 {isAdmin && (
                     <button
@@ -249,22 +306,65 @@ const EventDashboard = ({ userId, db, role }) => {
                         className="flex items-center space-x-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 transition shadow-md"
                     >
                         <PlusCircle className="w-4 h-4" />
-                        <span>{t('event.form.add_title')}</span>
+                        <span>{t('event.form.add_title') || 'Add Event'}</span>
                     </button>
                 )}
             </div>
             
-            {visibleEvents.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {visibleEvents.map(event => (
-                        <EventCard key={event.id} event={event} t={t} />
-                    ))}
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+                {/* Time Scope Filter (Week/Month/Year/Upcoming) */}
+                <SelectField
+                    label={t('event.filter_scope') || 'Filter Scope'}
+                    name="timeScope"
+                    options={[
+                        { value: 'upcoming', label: t('event.scope.all_upcoming') || 'All Upcoming' },
+                        { value: 'week', label: t('event.scope.this_week') || 'This Week' },
+                        { value: 'month', label: t('event.scope.this_month') || 'This Month' },
+                        { value: 'year', label: t('event.scope.this_year') || 'This Year' },
+                    ]}
+                    value={timeScope}
+                    onChange={(e) => setTimeScope(e.target.value)}
+                />
+                
+                {/* Year Filter */}
+                <SelectField 
+                    label={t('director.filter_year') || 'Filter by Year'}
+                    name="yearFilter" 
+                    options={[{ value: ALL_YEAR_FILTER, label: t('common.all_years') || 'All Years' }, ...ANO_OPTIONS]}
+                    value={yearFilter} 
+                    onChange={(e) => setYearFilter(e.target.value)} 
+                />
+            </div>
+
+
+            {/* UPCOMING EVENTS LIST */}
+            <div className="mb-8">
+                <CardTitle title={t('event.upcoming_title') || 'Upcoming Events'} icon={Clock} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                    {upcomingEvents.length > 0 ? (
+                        upcomingEvents.map(event => (
+                            <EventCard key={event.id} event={event} t={t} isPast={false} />
+                        ))
+                    ) : (
+                        <p className="text-gray-400 md:col-span-3 py-4">{t('event.no_upcoming') || 'No upcoming events match the current filter.'}</p>
+                    )}
                 </div>
-            ) : (
-                <div className="text-center text-gray-500 p-8 bg-black/30 rounded-lg">
-                    <p>{t('event.no_events')}</p>
+            </div>
+
+            {/* PAST EVENTS LIST */}
+            <div>
+                <CardTitle title={t('event.past_title') || 'Past Events'} icon={Calendar} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                    {pastEvents.length > 0 ? (
+                        pastEvents.map(event => (
+                            <EventCard key={event.id} event={event} t={t} isPast={true} />
+                        ))
+                    ) : (
+                        <p className="text-gray-400 md:col-span-3 py-4">{t('event.no_past') || 'No past events found.'}</p>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 };
