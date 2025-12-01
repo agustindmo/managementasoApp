@@ -1,14 +1,41 @@
-// src/components/finance/DonationsTab.jsx
+import React, { useState } from 'react';
+import FinanceDonationTable from '../tables/FinanceDonationTable.jsx';
+import FinanceDonationForm from '../forms/FinanceDonationForm.jsx';
 
-import React from 'react';
-import FinanceDonationDashboard from '../dashboards/FinanceDonationDashboard.jsx';
+const DonationsTab = ({ db, userId, role }) => {
+    const [view, setView] = useState('table');
+    const [activeRecord, setActiveRecord] = useState(null);
 
-const DonationsTab = ({ db, userId }) => {
+    const handleOpenForm = (record = null) => {
+        setActiveRecord(record);
+        setView('form');
+    };
+
+    const handleCloseForm = () => {
+        setView('table');
+        setActiveRecord(null);
+    };
+
     return (
-        <FinanceDonationDashboard 
-            db={db}
-            userId={userId}
-        />
+        <div className="w-full">
+            {view === 'table' ? (
+                <FinanceDonationTable
+                    db={db}
+                    onOpenForm={handleOpenForm}
+                    role={role}
+                />
+            ) : (
+                <FinanceDonationForm
+                    userId={userId}
+                    db={db}
+                    initialData={activeRecord}
+                    onClose={handleCloseForm}
+                    mode={activeRecord ? 'edit' : 'add'}
+                    role={role}
+                />
+            )}
+        </div>
     );
 };
+
 export default DonationsTab;

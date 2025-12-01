@@ -1,5 +1,13 @@
-// src/utils/constants.js
 import { ECUADOR_DATA } from './ecuador_data.js'; 
+
+// --- TAREA: Constante USER_ROLES añadida ---
+export const USER_ROLES = {
+    ADMIN: 'admin',
+    DIRECTOR: 'director',
+    USER: 'user',
+    DIRECTOR_INVITEE: 'directorinvitee',
+    USER_INVITEE: 'userinvitee'
+};
 
 export const PILAR_OPTIONS = [
     "apertura comercial", "bioseguridad", "competitividad",
@@ -27,8 +35,12 @@ export const ALL_FILTER_OPTION = 'All';
 export const ANO_OPTIONS = [ALL_YEAR_FILTER, ...Array.from({ length: 11 }, (_, i) => (currentYear - 5 + i).toString())];
 
 export const INITIAL_AGENDA_STATE = {
-    nombre: '', solicitud: '', pilar: PILAR_OPTIONS[0], tipoDeActo: TIPO_DE_ACTO_OPTIONS[0],
-    impacto: '', sector: SECTOR_OPTIONS[0], institucion: '', 
+    nombre: '', solicitud: '', 
+    pilar: '', // Changed: Free text default
+    tipoDeActo: TIPO_DE_ACTO_OPTIONS[0],
+    impacto: '', 
+    sector: '', // Changed: Free text default
+    institucion: '', 
     condicion: CONDICION_OPTIONS[0], agenda: AGENDA_OPTIONS[0], ayudaMemoria: '', 
     ano: currentYear.toString(), 
     stakeholders: [], 
@@ -51,8 +63,8 @@ export const INITIAL_ACTIVITY_STATE = {
     meetingMode: MEETING_MODE_OPTIONS[0], 
     date: new Date().toISOString().slice(0, 10), 
     timeSpent: 0, 
-    institution: [], // Actualizado a array
-    tema: [],        // Actualizado a array
+    institution: [], 
+    tema: [],        
     participants: '', 
     documentLink: '', 
 };
@@ -122,9 +134,8 @@ export const INITIAL_USER_PROFILE_STATE = {
 
 // --- Mapas para filtros de tablas ---
 export const AGENDA_COLUMN_OPTIONS_MAP = {
-    pilar: PILAR_OPTIONS,
+    // Removed 'pilar' and 'sector' to enable text search behavior
     tipoDeActo: TIPO_DE_ACTO_OPTIONS,
-    sector: SECTOR_OPTIONS,
     condicion: CONDICION_OPTIONS,
     agenda: AGENDA_OPTIONS,
     ano: ANO_OPTIONS.filter(opt => opt !== ALL_YEAR_FILTER), 
@@ -198,7 +209,6 @@ export const POSITION_SCORE_MAP = {
 };
 
 // Constantes para Log de Prensa
-// --- TASK 1: Added PRESS_LOG_ACTION_OPTIONS ---
 export const PRESS_LOG_ACTION_OPTIONS = [
     "Interview", "Press Release", "Press Conference", "Meetings", "Training"
 ];
@@ -212,7 +222,6 @@ export const IMPACT_OPTIONS = ["Positive", "Neutral", "Negative"];
 
 export const INITIAL_PRESS_LOG_STATE = {
     date: new Date().toISOString().slice(0, 10),
-    // --- TASK 1: Added 'action' ---
     action: PRESS_LOG_ACTION_OPTIONS[0],
     agendaItems: [], 
     otherAgendaItem: '', 
@@ -226,7 +235,6 @@ export const INITIAL_PRESS_LOG_STATE = {
 
 export const PRESS_LOG_TABLE_COLUMNS = [
     { labelKey: "press_log.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
-    // --- TASK 1: Added 'action' column ---
     { labelKey: "press_log.col.action", key: "action", sortable: true, filterable: true, optionsKey: 'action', type: 'string' },
     { labelKey: "press_log.col.agenda_items", key: "agendaItems", sortable: false, filterable: true, type: 'array' },
     { labelKey: "press_log.col.media_entries", key: "mediaEntries", sortable: false, filterable: true, type: 'array' },
@@ -239,7 +247,6 @@ export const PRESS_LOG_TABLE_COLUMNS = [
 export const PRESS_LOG_COLUMN_OPTIONS_MAP = {
     impact: IMPACT_OPTIONS,
     reach: PRESS_LOG_REACH_OPTIONS,
-    // --- TASK 1: Added 'action' options ---
     action: PRESS_LOG_ACTION_OPTIONS,
 };
 
@@ -252,9 +259,9 @@ export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
     name: '',
     email: '',
     phone: '',
-    type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS[0], // Default a 'Online'
-    scope: MEDIA_SCOPE_OPTIONS[0], // Default a 'National'
-    position: STAKEHOLDER_POSITION_OPTIONS[2], // Default a 'Neutral'
+    type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS[0], 
+    scope: MEDIA_SCOPE_OPTIONS[0], 
+    position: STAKEHOLDER_POSITION_OPTIONS[2], 
 };
 
 export const MEDIA_STAKEHOLDER_TABLE_COLUMNS = [
@@ -285,7 +292,6 @@ export const MEMBERSHIP_FEE_TABLE_COLUMNS = [
     { labelKey: "admin.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
 
-// --- ESTE ES EL EXPORT QUE FALTABA ---
 export const MEMBERSHIP_FEE_COLUMN_OPTIONS_MAP = {
     activity: INDUSTRY_ACTIVITIES,
     membershipType: MEMBERSHIP_TYPE_OPTIONS,
@@ -339,7 +345,7 @@ export const INITIAL_PROJECT_STATE = {
 export const PROJECT_TABLE_COLUMNS = [
     { labelKey: "finance.projects.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
     { labelKey: "finance.projects.col.amount", key: "amount", sortable: true, filterable: true, type: 'number' },
-    { labelKey: "finance.projects.col.dates", key: "startDate", sortable: true, filterable: false, type: 'string' }, // Se usará para ordenar por fecha de inicio
+    { labelKey: "finance.projects.col.dates", key: "startDate", sortable: true, filterable: false, type: 'string' }, 
     { labelKey: "finance.projects.col.fundingSources", key: "fundingSources", sortable: false, filterable: true, optionsKey: 'fundingSources', type: 'array' },
     { labelKey: "finance.projects.col.objectives", key: "objectives", sortable: false, filterable: true, type: 'array' },
     { labelKey: "finance.projects.col.beneficiaries", key: "beneficiaries", sortable: false, filterable: true, type: 'array' },
@@ -389,7 +395,7 @@ export const INITIAL_AUDIT_STATE = {
 };
 
 export const AUDIT_TABLE_COLUMNS = [
-    { labelKey: "finance.audits.col.dates", key: "startDate", sortable: true, filterable: true, type: 'string' }, // Ordenar por fecha de inicio
+    { labelKey: "finance.audits.col.dates", key: "startDate", sortable: true, filterable: true, type: 'string' }, 
     { labelKey: "finance.audits.col.auditor", key: "auditor", sortable: true, filterable: true, type: 'string' },
     { labelKey: "finance.audits.col.goals", key: "goals", sortable: false, filterable: true, type: 'string' },
     { labelKey: "finance.audits.col.results", key: "results", sortable: false, filterable: true, type: 'string' },
@@ -398,13 +404,11 @@ export const AUDIT_TABLE_COLUMNS = [
 ];
 
 export const AUDIT_COLUMN_OPTIONS_MAP = {
-    // Todos los campos son de texto o fecha, no se necesitan opciones de select
 };
 
 // TAREA 7: Constantes para Proveedores y Relaciones
 export const PROVIDER_TYPE_OPTIONS = ["Person", "Company"];
 export const PROVIDER_PRODUCT_SERVICE_OPTIONS = ["Supplies", "Consulting", "Logistics", "Legal", "Technology", "Other"];
-// Re-usaremos COMPANY_AREAS para 'area'
 
 export const INITIAL_PROVIDER_STATE = {
     name: '',
@@ -486,14 +490,14 @@ export const INITIAL_MEMBER_REQUEST_STATE = {
     commercial_name: '',
     legal_rep: '',
     ceo: '',
-    partners: [], // Actualizado a array
+    partners: [], 
     activity: INDUSTRY_ACTIVITIES[0],
-    country: 'Ecuador', // Nuevo campo
+    country: 'Ecuador', 
     province: ECUADOR_PROVINCES[0],
     city: ECUADOR_DATA[ECUADOR_PROVINCES[0]][0], 
-    commercial_refs: [], // Actualizado a array
+    commercial_refs: [], 
     risk_status: MEMBER_REQUEST_STATUS_OPTIONS[0],
-    risk_link: '', // Nuevo campo
+    risk_link: '', 
 };
 
 // TAREA 1: Constantes para Costos (Resumen Financiero)
@@ -560,8 +564,8 @@ export const INITIAL_EVENT_STATE = {
     topics: [],
     participants: [],
     visibility: 'all',
-    call_link: '', // --- NUEVO ---
-    minute_link: '', // --- NUEVO ---
+    call_link: '', 
+    minute_link: '', 
 };
 
 // --- Tarea 2 (Directorios) ---
@@ -580,7 +584,7 @@ export const BOARD_DIRECTORY_COLUMNS = [
 ];
 export const INITIAL_PUBLIC_STAKEHOLDER_STATE = {
     name: '',
-    type: 'Public', // Fijo
+    type: 'Public', 
     ambito: STAKEHOLDER_AMBITO_OPTIONS.National,
     role: STAKEHOLDER_ROLE_OPTIONS[0],
     position: STAKEHOLDER_POSITION_OPTIONS[0],
@@ -604,19 +608,17 @@ export const PUBLIC_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
     role: STAKEHOLDER_ROLE_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
 };
 
-// --- TASK 6: Updated Commission Constants ---
 export const INITIAL_COMMISSION_STATE = {
     name: '',
     scope: '',
-    members: [], // Changed from memberKeys (array of strings) to members (array of objects)
+    members: [], 
 };
 export const COMMISSION_TABLE_COLUMNS = [
     { labelKey: "commission.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
     { labelKey: "commission.col.scope", key: "scope", sortable: false, filterable: true, type: 'string' },
-    { labelKey: "commission.col.members", key: "members", sortable: false, filterable: true, type: 'array' }, // Changed key from memberKeys
+    { labelKey: "commission.col.members", key: "members", sortable: false, filterable: true, type: 'array' }, 
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
-// --- End Task 6 Changes ---
 
 export const INITIAL_LEGAL_DOCUMENT_STATE = {
     name: '',
@@ -654,10 +656,8 @@ export const GOVERNANCE_MEETING_COLUMN_OPTIONS_MAP = {
     type: GOVERNANCE_MEETING_TYPE_OPTIONS,
 };
 
-// --- (NUEVO) Tarea 5: Constantes para Boletín ---
-// Re-usar EVENT_VISIBILITY_OPTIONS
 export const INITIAL_ANNOUNCEMENT_STATE = {
     title: '',
     content: '',
-    visibility: 'all', // 'all', 'directors', 'users'
+    visibility: 'all',
 };

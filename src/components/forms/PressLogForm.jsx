@@ -1,33 +1,27 @@
-// src/components/forms/PressLogForm.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, set, push, serverTimestamp, onValue } from 'firebase/database';
-import { Megaphone, X, Plus, Trash2, Search } from 'lucide-react';
+import { Megaphone, X, Loader2, Search } from 'lucide-react';
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import SelectField from '../ui/SelectField.jsx';
 import { 
     INITIAL_PRESS_LOG_STATE,
-    PRESS_LOG_FORMAT_OPTIONS,
+    PRESS_LOG_FORMAT_OPTIONS, // Corrected Import
+    PRESS_LOG_ACTION_OPTIONS,
     PRESS_LOG_REACH_OPTIONS,
-    IMPACT_OPTIONS,
-    PRESS_LOG_ACTION_OPTIONS, // [New: Imported for action field]
+    IMPACT_OPTIONS
 } from '../../utils/constants.js'; 
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// --- Helper: Snapshot to Array ---
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
     const val = snapshot.val();
-    return Object.keys(val).map(key => ({
-        id: key,
-        ...val[key],
-    }));
+    return Object.keys(val).map(key => ({ id: key, ...val[key] }));
 };
 
-// --- Helper: Componente de Búsqueda Multi-Select (para Agenda y Stakeholders) ---
-const MultiSearchSelect = ({ labelKey, placeholderKey, selectedItems, allOptions, onToggleItem, t }) => {
+// Helper: Multi-select for Agenda Items
+const MultiSearchSelect = ({ labelKey, placeholderKey, selectedItems = [], allOptions, onToggleItem, t }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredOptions = useMemo(() => {
@@ -38,19 +32,19 @@ const MultiSearchSelect = ({ labelKey, placeholderKey, selectedItems, allOptions
         );
     }, [searchTerm, allOptions, selectedItems]);
 
-    const selectedOptions = useMemo(() => {
+    const selectedOptionsData = useMemo(() => {
         return selectedItems.map(key => 
-            allOptions.find(m => m.value === key) || { value: key, label: "Invalid Item" }
+            allOptions.find(m => m.value === key) || { value: key, label: "Unknown Item" }
         );
     }, [selectedItems, allOptions]);
 
     return (
-        <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-3">
-            <label className="block text-sm font-medium text-gray-200">{t(labelKey)}</label>
+        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-3">
+            <label className="block text-sm font-medium text-slate-700">{t(labelKey)}</label>
             
             <InputField 
                 label=""
-                name="search_member"
+                name="search_item"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 required={false}
@@ -59,11 +53,11 @@ const MultiSearchSelect = ({ labelKey, placeholderKey, selectedItems, allOptions
             />
 
             {filteredOptions.length > 0 && (
-                <div className="max-h-32 overflow-y-auto space-y-1 rounded-lg border border-sky-700 bg-black/40 p-2">
+                <div className="max-h-32 overflow-y-auto space-y-1 rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
                     {filteredOptions.slice(0, 10).map(opt => (
                         <div 
                             key={opt.value}
-                            className="p-2 text-sm text-gray-200 rounded-md hover:bg-sky-700 cursor-pointer"
+                            className="p-2 text-sm text-slate-700 rounded hover:bg-blue-50 cursor-pointer transition-colors"
                             onClick={() => {
                                 onToggleItem(opt.value);
                                 setSearchTerm('');
@@ -75,15 +69,14 @@ const MultiSearchSelect = ({ labelKey, placeholderKey, selectedItems, allOptions
                 </div>
             )}
 
-            {/* Selected Items */}
-            <div className="flex flex-wrap gap-2 pt-2">
-                {selectedOptions.map((opt) => (
-                    <span key={opt.value} className="flex items-center bg-sky-700 text-white text-sm font-medium px-2.5 py-0.5 rounded-full">
-                        {opt.label}
+            <div className="flex flex-wrap gap-2 pt-2 min-h-[24px]">
+                {selectedOptionsData.map((opt) => (
+                    <span key={opt.value} className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full border border-blue-200">
+                        <span className="truncate max-w-[150px]">{opt.label}</span>
                         <button
                             type="button"
                             onClick={() => onToggleItem(opt.value)}
-                            className="ml-1.5 text-sky-200 hover:text-white"
+                            className="ml-1.5 text-blue-600 hover:text-blue-800"
                         >
                             <X className="w-3 h-3" />
                         </button>
@@ -94,142 +87,91 @@ const MultiSearchSelect = ({ labelKey, placeholderKey, selectedItems, allOptions
     );
 };
 
-
-// --- Componente Principal del Formulario ---
-const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose }) => {
+const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose }) => { 
     const { t } = useTranslation();
     
-    // --- TASK: Removed mediaStakeholderKeys from initial state setup ---
     const [formData, setFormData] = useState(() => {
-        const state = initialData ? { ...initialData } : { ...INITIAL_PRESS_LOG_STATE };
-        state.agendaItems = state.agendaItems || [];
-        state.mediaEntries = state.mediaEntries || [];
-        // state.mediaStakeholderKeys = state.mediaStakeholderKeys || []; // Removed
-        return state;
+        // Ensure arrays are initialized
+        const base = initialData || INITIAL_PRESS_LOG_STATE;
+        return {
+            ...base,
+            agendaItems: base.agendaItems || [],
+            mediaEntries: base.mediaEntries || []
+        };
     });
 
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
-    
-    // State for Agenda Item options
     const [agendaItemOptions, setAgendaItemOptions] = useState([]);
-    
-    // --- TASK: Removed mediaStakeholderOptions state ---
 
     const isReady = !!db && !!userId;
     const dbPathKey = 'pressLog';
-    
-    // [Fix/Correction: formTitle is correctly defined here inside the component scope]
-    const formTitle = mode === 'edit' 
-        ? t('press_log.form.edit_title')
-        : t('press_log.form.add_title');
+    const formTitle = mode === 'edit' ? t('press_log.form.edit_title') : t('press_log.form.add_title');
 
-    // --- Effect to load Agenda Items ---
+    // Load Agenda Items for the multi-select
     useEffect(() => {
         if (!db) return;
         const agendaRef = ref(db, getDbPaths().agenda);
-        
-        const unsubAgenda = onValue(agendaRef, (snapshot) => {
+        const unsub = onValue(agendaRef, (snapshot) => {
             const items = snapshotToArray(snapshot);
-            setAgendaItemOptions(
-                items.map(item => ({
-                    value: item.id,
-                    label: item.nombre || 'Untitled'
-                }))
-            );
+            setAgendaItemOptions(items.map(item => ({ value: item.id, label: item.nombre || 'Untitled' })));
         });
-        
-        return () => unsubAgenda();
+        return () => unsub();
     }, [db]);
-
-    // --- TASK: Removed useEffect that fetched mediaStakeholders ---
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        
         if (type === 'checkbox') {
-            // Handle Format checkboxes (mediaEntries)
             setFormData(prev => {
-                const currentEntries = prev.mediaEntries || [];
-                const newEntries = checked
-                    ? [...currentEntries, name]
-                    : currentEntries.filter(entry => entry !== name);
-                return { ...prev, mediaEntries: newEntries };
+                const current = prev.mediaEntries || [];
+                const updated = checked ? [...current, name] : current.filter(item => item !== name);
+                return { ...prev, mediaEntries: updated };
             });
         } else {
-            setFormData(prev => ({
-                ...prev, 
-                [name]: value
-            }));
+            setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || '' : value }));
         }
     };
 
-    // --- Handler for Agenda Multi-select ---
     const handleToggleAgendaItem = (itemId) => {
         setFormData(prev => {
-            const currentItems = prev.agendaItems || [];
-            const isSelected = currentItems.includes(itemId);
-            const newItems = isSelected 
-                ? currentItems.filter(id => id !== itemId) 
-                : [...currentItems, itemId]; 
-            return { ...prev, agendaItems: newItems };
+            const current = prev.agendaItems || [];
+            const updated = current.includes(itemId) ? current.filter(id => id !== itemId) : [...current, itemId];
+            return { ...prev, agendaItems: updated };
         });
     };
-    
-    // --- TASK: Removed handleToggleStakeholder ---
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!isReady) return; 
-
         setIsLoading(true);
         setMessage('');
         setMessageType('success');
-        
-        // --- TASK: Removed mediaStakeholderKeys from data payload ---
-        const dataToSave = {
-            date: formData.date,
-            action: formData.action, // [New: Added action field to data payload]
-            agendaItems: formData.agendaItems || [],
-            otherAgendaItem: formData.otherAgendaItem || '',
-            mediaEntries: formData.mediaEntries || [],
-            impact: formData.impact,
-            reach: formData.reach,
-            audience: formData.audience || '',
-            freePress: formData.freePress || '',
-            link: formData.link || '',
-            // mediaStakeholderKeys: formData.mediaStakeholderKeys || [], // Removed
-        };
 
         try {
             const path = getDbPaths()[dbPathKey];
-            
             if (mode === 'edit' && initialData?.id) {
-                const itemRef = ref(db, `${path}/${initialData.id}`);
-                await set(itemRef, {
-                    ...dataToSave,
-                    id: initialData.id, // Ensure ID is preserved
+                await set(ref(db, `${path}/${initialData.id}`), {
+                    ...formData,
                     updatedAt: serverTimestamp(),
                     updatedBy: userId,
-                    createdAt: initialData.createdAt, // Preserve original create date
-                    createdBy: initialData.createdBy, // Preserve original creator
+                    createdAt: initialData.createdAt, 
+                    createdBy: initialData.createdBy,
                 });
-                setMessage(t('press_log.form.success_update'));
+                setMessage(t('activity.form.success_update'));
             } else {
                 const newItemRef = push(ref(db, path));
                 await set(newItemRef, {
-                    ...dataToSave,
+                    ...formData,
                     id: newItemRef.key,
                     createdAt: serverTimestamp(),
                     createdBy: userId,
                 });
-                setMessage(t('press_log.form.success_add'));
+                setMessage(t('activity.form.success_add'));
             }
-
             setTimeout(onClose, 1000); 
         } catch (error) {
-            console.error(`Error ${mode} press log: `, error);
+            console.error(`Error ${mode} Press Log: `, error);
             setMessage(t('activity.form.fail'));
             setMessageType('error');
             setIsLoading(false);
@@ -237,32 +179,31 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={formTitle} icon={Megaphone} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-                
-                <InputField 
-                    label={t('press_log.form.date')} 
-                    name="date" 
-                    type="date"
-                    value={String(formData.date ?? '')} 
-                    onChange={handleChange} 
-                />
-
-                {/* [New: Added SelectField for action] */}
-                <SelectField 
-                    label={t('press_log.col.action')} 
-                    name="action" 
-                    options={PRESS_LOG_ACTION_OPTIONS.map(opt => ({ value: opt, label: t(`press_log.action_opts.${opt.toLowerCase().replace(/ /g, '_')}`) }))}
-                    value={formData.action} 
-                    onChange={handleChange} 
-                />
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputField 
+                        label={t('press_log.col.date')} 
+                        name="date" 
+                        type="date" 
+                        value={String(formData.date ?? '')} 
+                        onChange={handleChange} 
+                    />
+                    <SelectField 
+                        label={t('press_log.col.action')} 
+                        name="action" 
+                        options={PRESS_LOG_ACTION_OPTIONS.map(opt => ({ value: opt, label: t(`press_log.action_opts.${opt.toLowerCase().replace(/ /g, '_')}`) }))}
+                        value={formData.action} 
+                        onChange={handleChange} 
+                    />
+                </div>
 
                 <MultiSearchSelect
                     labelKey="press_log.col.agenda_items"
@@ -281,10 +222,27 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
                     required={false}
                     placeholder={t('press_log.form.other_agenda_placeholder')}
                 />
-                
-                {/* --- TASK: Removed Stakeholder MultiSearchSelect --- */}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Media Formats Checkboxes */}
+                <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-3">
+                    <label className="block text-sm font-medium text-slate-700">{t('press_log.form.format')}</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {PRESS_LOG_FORMAT_OPTIONS.map(format => (
+                            <label key={format} className="flex items-center space-x-2 text-slate-600 hover:text-slate-800 cursor-pointer">
+                                <input 
+                                    type="checkbox"
+                                    name={format}
+                                    checked={(formData.mediaEntries || []).includes(format)}
+                                    onChange={handleChange}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>{t(`press_log.format_opts.${format.toLowerCase()}`) || format}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <SelectField 
                         label={t('press_log.col.impact')} 
                         name="impact" 
@@ -300,26 +258,8 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
                         onChange={handleChange} 
                     />
                 </div>
-                
-                 <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-3">
-                    <label className="block text-sm font-medium text-gray-200">{t('press_log.form.format')}</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {PRESS_LOG_FORMAT_OPTIONS.map(format => (
-                            <label key={format} className="flex items-center space-x-2 text-gray-300">
-                                <input 
-                                    type="checkbox"
-                                    name={format} // The value itself
-                                    checked={(formData.mediaEntries || []).includes(format)}
-                                    onChange={handleChange}
-                                    className="rounded border-gray-600 bg-gray-700 text-sky-500 focus:ring-sky-600"
-                                />
-                                <span>{t(`press_log.format_opts.${format.toLowerCase()}`)}</span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <InputField 
                         label={t('press_log.form.audience')} 
                         name="audience" 
@@ -339,25 +279,25 @@ const PressLogForm = ({ userId, db, mode = 'add', initialData = null, onClose })
                 </div>
 
                 <InputField 
-                    label={t('press_log.form.link')} 
+                    label={t('press_log.col.link')} 
                     name="link" 
                     type="url" 
                     value={String(formData.link ?? '')} 
                     onChange={handleChange} 
                     required={false}
                 />
-                
+
                 <button
                     type="submit"
                     disabled={isLoading || !isReady}
-                    className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                        isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
+                    className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                        isLoading || !isReady ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
                     }`}
                 >
                     {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
                 </button>
                 {message && (
-                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`text-center text-sm mt-3 ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                         {message}
                     </p>
                 )}

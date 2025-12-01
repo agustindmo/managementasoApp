@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue } from 'firebase/database';
-import { BarChart2, Loader2, Target, LayoutList, Search, ArrowUp, ArrowDown } from 'lucide-react'; 
-// --- Recharts components imported for the new chart ---
+import { BarChart2, Loader2, Target, LayoutList, ArrowUp, ArrowDown, Link } from 'lucide-react'; 
 import { 
     ResponsiveContainer, 
     BarChart, 
@@ -15,9 +14,9 @@ import { getDbPaths } from '../../services/firebase.js';
 import CardTitle from '../ui/CardTitle.jsx';
 import SelectField from '../ui/SelectField.jsx';
 import { ANO_OPTIONS, ALL_YEAR_FILTER, MILESTONE_COLUMN_OPTIONS_MAP, ALL_FILTER_OPTION } from '../../utils/constants.js';
-import { useTranslation } from '../../context/TranslationContext.jsx'; // Tarea 2
+import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// Define Table Structure and MetaData - UPDATED to use labelKey
+// Define Table Structure and MetaData
 const MILESTONE_COLUMNS = [
     { labelKey: "objectives.col.nombre", key: "nombre", sortable: true, filterable: true, type: 'string' },        
     { labelKey: "objectives.col.okrs", key: "OKRs", sortable: true, filterable: true, type: 'string' },           
@@ -29,7 +28,7 @@ const MILESTONE_COLUMNS = [
     { labelKey: "objectives.col.link", key: "archivo", sortable: false, filterable: true, type: 'string' }, 
 ];
 
-// --- Utility Components (Tarea 1: Estilos oscuros) ---
+// --- Utility Functions ---
 
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
@@ -45,36 +44,33 @@ const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(numericValue);
 };
 
-// --- Custom Tooltip for Recharts (Added for Task 2) ---
+// --- Custom Tooltip for Recharts (Light Theme) ---
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="p-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg">
-                <p className="text-white font-semibold">{label}</p>
-                <p className="text-sky-400">{`Count: ${payload[0].value}`}</p>
+            <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-lg">
+                <p className="text-slate-800 font-semibold mb-1">{label}</p>
+                <p className="text-blue-600 font-medium">{`Count: ${payload[0].value}`}</p>
             </div>
         );
     }
     return null;
 };
 
-
-// --- Horizontal Chart for OKRs (IMPROVED WITH RECHARTS for Task 2) ---
+// --- Horizontal Chart for OKRs (Light Theme) ---
 const OKRHorizontalBarChart = ({ data, t }) => {
     
-    // Convert object data to sorted array for Recharts
     const chartData = useMemo(() =>
         Object.entries(data)
             .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => a.count - b.count) // Sort ascending for horizontal chart
+            .sort((a, b) => a.count - b.count)
     , [data]);
 
     if (chartData.length === 0) {
-        return <p className="text-gray-500 text-center py-4">{t('objectives.no_okr_data')}</p>;
+        return <p className="text-slate-400 text-center py-8 italic">{t('objectives.no_okr_data')}</p>;
     }
 
-    // Dynamically calculate chart height based on number of bars
-    const chartHeight = Math.max(200, chartData.length * 30 + 40); // 30px per bar + padding
+    const chartHeight = Math.max(200, chartData.length * 40 + 40); 
 
     return (
         <div className="p-4" style={{ height: `${chartHeight}px` }}>
@@ -82,34 +78,34 @@ const OKRHorizontalBarChart = ({ data, t }) => {
                 <BarChart
                     data={chartData}
                     layout="vertical"
-                    margin={{ top: 0, right: 10, left: 30, bottom: 0 }}
+                    margin={{ top: 0, right: 20, left: 20, bottom: 0 }}
                 >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
                     <XAxis
                         type="number"
-                        stroke="#9ca3af"
+                        stroke="#64748b"
                         allowDecimals={false}
-                        tick={{ fontSize: 12, fill: '#9ca3af' }}
+                        tick={{ fontSize: 12, fill: '#64748b' }}
                     />
                     <YAxis
                         dataKey="name"
                         type="category"
-                        stroke="#9ca3af"
-                        width={150} // Allocate space for labels
-                        tick={{ fontSize: 12, fill: '#e5e7eb' }}
-                        tickFormatter={(value) => value.length > 20 ? `${value.substring(0, 20)}...` : value} // Truncate long labels
+                        stroke="#64748b"
+                        width={180} 
+                        tick={{ fontSize: 12, fill: '#475569' }}
+                        tickFormatter={(value) => value.length > 25 ? `${value.substring(0, 25)}...` : value}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} />
-                    <Bar dataKey="count" fill="#0ea5e9" barSize={15} radius={[0, 4, 4, 0]} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }} />
+                    <Bar dataKey="count" fill="#3b82f6" barSize={20} radius={[0, 4, 4, 0]} />
                 </BarChart>
             </ResponsiveContainer>
         </div>
     );
 };
 
-// Custom Table Header Component with controls
-const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, t }) => { // Tarea 2: Añadir t
-    const label = t(column.labelKey); // Tarea 2
+// --- Table Header Component ---
+const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, t }) => {
+    const label = t(column.labelKey);
     
     const isSorted = currentSort.key === column.key;
     const sortIcon = isSorted ? (currentSort.direction === 'asc' ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />) : null;
@@ -124,18 +120,12 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
     return (
         <th 
             key={column.key} 
-            // Tarea 1: Estilo de cabecera oscuro
-            className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider whitespace-nowrap"
+            className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider whitespace-nowrap bg-slate-50"
         >
-            <div className="flex flex-col space-y-1">
+            <div className="flex flex-col space-y-2">
                 {/* Sort Control */}
-                <div className="flex items-center">
-                    <span 
-                        className={`cursor-pointer font-medium ${column.sortable ? 'hover:text-white transition-colors' : ''}`}
-                        onClick={() => column.sortable && onSortChange(column.key)}
-                    >
-                        {label}
-                    </span>
+                <div className="flex items-center cursor-pointer hover:text-slate-700 transition-colors" onClick={() => column.sortable && onSortChange(column.key)}>
+                    <span className="font-bold">{label}</span>
                     {sortIcon}
                 </div>
                 
@@ -144,22 +134,20 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
                     isTextInputFilter ? (
                          <input
                             type="text"
-                            placeholder={`${t('objectives.search')} ${label}`} // Tarea 2
+                            placeholder={`${t('policy.search')}...`}
                             value={currentFilters[column.key] || ''}
                             onChange={(e) => onFilterChange(column.key, e.target.value)}
-                            // Tarea 1: Estilo de input oscuro
-                            className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[100px]"
+                            className="text-xs p-1.5 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-white text-slate-800 shadow-sm"
                         />
                     ) : (
                         <select
                             value={currentFilters[column.key] || ALL_FILTER_OPTION}
                             onChange={(e) => onFilterChange(column.key, e.target.value)}
-                            // Tarea 1: Estilo de select oscuro
-                            className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[100px]"
+                            className="text-xs p-1.5 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-white text-slate-800 shadow-sm"
                         >
-                            <option value={ALL_FILTER_OPTION} className="bg-sky-900">{ALL_FILTER_OPTION}</option>
+                            <option value={ALL_FILTER_OPTION}>{ALL_FILTER_OPTION}</option>
                             {options.map(option => (
-                                <option key={option} value={option} className="bg-sky-900">{option}</option>
+                                <option key={option} value={option}>{option}</option>
                             ))}
                         </select>
                     )
@@ -169,10 +157,9 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
     );
 };
 
-
 // --- Main Objectives Dashboard Component ---
 const ObjectivesDashboard = ({ db }) => { 
-    const { t } = useTranslation(); // Tarea 2
+    const { t } = useTranslation();
     const [milestones, setMilestones] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [yearFilter, setYearFilter] = useState(ALL_YEAR_FILTER);
@@ -221,11 +208,11 @@ const ObjectivesDashboard = ({ db }) => {
 
                 const itemValue = String(item[key] || '');
 
-                if (!column.optionsKey) { // Text Input Filter (partial match)
+                if (!column.optionsKey) { 
                     if (!itemValue.toLowerCase().includes(filterValue.toLowerCase())) {
                         return false;
                     }
-                } else if (itemValue !== filterValue) { // Dropdown Filter (exact match)
+                } else if (itemValue !== filterValue) {
                     return false;
                 }
             }
@@ -258,9 +245,6 @@ const ObjectivesDashboard = ({ db }) => {
         };
     }, [milestones, yearFilter, filters, sort]);
     
-    // Recalculate total ahorro based on filtered data
-    const totalAhorro = filteredMilestones.reduce((sum, item) => sum + item.ahorro, 0);
-
     const handleSortChange = (key) => {
         setSort(prev => ({
             key,
@@ -284,28 +268,24 @@ const ObjectivesDashboard = ({ db }) => {
         })); 
     };
 
-
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center p-8">
-                {/* Tarea 1: Estilo de carga oscuro */}
-                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                <p className="ml-3 text-sky-200">{t('objectives.loading')}</p>
+            <div className="flex justify-center items-center p-12">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <p className="ml-3 text-slate-500">{t('objectives.loading')}</p>
             </div>
         );
     }
     
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            {/* Tarea 1: Título oscuro y color de icono */}
-            <h1 className="text-3xl font-bold text-white mb-6 flex items-center">
-                <Target className="w-8 h-8 mr-3 text-sky-400" />
-                {t('objectives.title')}
-            </h1>
-            
-            {/* Tarea 1: Contenedor de filtro oscuro */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg p-4 sm:max-w-xs flex-grow sm:flex-grow-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <h1 className="text-3xl font-bold text-slate-800 flex items-center">
+                    <Target className="w-8 h-8 mr-3 text-blue-600" />
+                    {t('objectives.title')}
+                </h1>
+                
+                <div className="w-full sm:w-48">
                     <SelectField 
                         label={t('objectives.filter_year')} 
                         name="yearFilter" 
@@ -316,13 +296,23 @@ const ObjectivesDashboard = ({ db }) => {
                 </div>
             </div>
             
-            {/* Tarea 1: Contenedor oscuro para la tabla */}
-            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8">
-                <CardTitle title={`${t('objectives.records_title')} (${filteredMilestones.length} ${t('objectives.records_count_post')}`} icon={LayoutList} />
+            {/* Chart Section */}
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-8">
+                <CardTitle title={`${t('objectives.okr_breakdown') || 'Objectives Breakdown'} (${yearFilter})`} icon={BarChart2} />
+                <OKRHorizontalBarChart data={okrCounts} t={t} />
+            </div>
+
+            {/* Table Section */}
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-8">
+                <div className="p-4 border-b border-slate-200">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center">
+                        <LayoutList className="w-5 h-5 mr-2 text-blue-600" />
+                        {`${t('objectives.records_title')} (${filteredMilestones.length})`}
+                    </h2>
+                </div>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-sky-800/50">
-                        {/* Tarea 1: Cabecera oscura */}
-                        <thead className="bg-sky-900/70">
+                    <table className="min-w-full divide-y divide-slate-200">
+                        <thead className="bg-slate-50">
                             <tr>
                                 {MILESTONE_COLUMNS.map(column => (
                                     <TableHeaderWithControls
@@ -333,52 +323,45 @@ const ObjectivesDashboard = ({ db }) => {
                                         onFilterChange={handleFilterChange}
                                         filterOptions={MILESTONE_COLUMN_OPTIONS_MAP}
                                         currentFilters={filters}
-                                        t={t} // Tarea 2
+                                        t={t}
                                     />
                                 ))}
                             </tr>
                         </thead>
-                        {/* Tarea 1: Cuerpo oscuro */}
-                        <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
+                        <tbody className="bg-white divide-y divide-slate-200">
                             {filteredMilestones.length > 0 ? (
                                 filteredMilestones.map(item => (
-                                    <tr key={item.id} className="hover:bg-sky-900/60 transition-colors">
-                                        <td className="px-6 py-2 text-sm font-medium text-white truncate max-w-[150px]" title={item.nombre}>{item.nombre}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={item.OKRs}>{item.OKRs}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[120px]" title={item.institucion}>{item.institucion}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400">{item.ambito}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={item.tipoDeActo}>{item.tipoDeActo}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400">{item.ano}</td>
-                                        <td className="px-6 py-2 text-sm text-green-400 font-semibold">{formatCurrency(item.ahorro)}</td>
+                                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-900 truncate max-w-[200px]" title={item.nombre}>{item.nombre}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 truncate max-w-[150px]" title={item.OKRs}>{item.OKRs}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 truncate max-w-[150px]" title={item.institucion}>{item.institucion}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600">{item.ambito}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 truncate max-w-[150px]" title={item.tipoDeActo}>{item.tipoDeActo}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600">{item.ano}</td>
+                                        <td className="px-6 py-4 text-sm text-emerald-600 font-semibold">{formatCurrency(item.ahorro)}</td>
                                         
-                                        <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]">
+                                        <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                                             {item.archivo ? (
                                                 <a 
                                                     href={item.archivo} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    className="text-blue-400 hover:text-blue-300 transition"
+                                                    className="text-blue-600 hover:text-blue-800 transition flex items-center"
                                                     title="View File Link"
                                                 >
-                                                    {t('objectives.view_link')}
+                                                    <Link className="w-4 h-4 mr-1" />
+                                                    {t('objectives.view_link') || 'View'}
                                                 </a>
-                                            ) : 'N/A'}
+                                            ) : <span className="text-slate-400">N/A</span>}
                                         </td>
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan={MILESTONE_COLUMNS.length} className="px-6 py-4 text-center text-gray-500">{t('objectives.no_milestones')}</td></tr>
+                                <tr><td colSpan={MILESTONE_COLUMNS.length} className="px-6 py-8 text-center text-slate-500 italic">{t('objectives.no_milestones')}</td></tr>
                             )}
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            {/* Tarea 1: Contenedor oscuro para el gráfico */}
-            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8">
-                <CardTitle title={`${t('objectives.okr_breakdown')} (${yearFilter})`} icon={BarChart2} />
-                {/* --- This component was rewritten for Task 2 --- */}
-                <OKRHorizontalBarChart data={okrCounts} t={t} />
             </div>
         </div>
     );

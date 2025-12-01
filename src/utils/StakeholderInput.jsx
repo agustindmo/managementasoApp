@@ -1,5 +1,3 @@
-// src/components/utils/StakeholderInput.jsx
-
 import React, { useState } from 'react';
 import { Users, Search, Plus, Trash2, X } from 'lucide-react';
 import InputField from '../components/ui/InputField.jsx';
@@ -35,11 +33,10 @@ const StakeholderInput = ({ t, stakeholders, onStakeholderChange, options = [] }
 
         const stakeholderToAdd = {
             ...newStakeholder,
-            id: Date.now() // Use a temporary ID for keying before saving to DB
+            id: Date.now() 
         };
         onStakeholderChange([...stakeholders, stakeholderToAdd]);
 
-        // Reset form
         setNewStakeholder({
             name: '',
             type: Object.values(STAKEHOLDER_TYPE_OPTIONS)[0],
@@ -54,10 +51,9 @@ const StakeholderInput = ({ t, stakeholders, onStakeholderChange, options = [] }
     };
 
     return (
-        <div className="space-y-4 p-4 rounded-lg border border-sky-800/50 bg-sky-950/30">
-            <h3 className="text-lg font-semibold text-white">{t('policy.form.stakeholder_title')}</h3>
+        <div className="space-y-4 p-4 rounded-lg border border-slate-200 bg-slate-50">
+            <h3 className="text-lg font-semibold text-slate-800">{t('policy.form.stakeholder_title')}</h3>
 
-            {/* Formulario de Adición */}
             <div className="space-y-4">
                 <InputField 
                     label={t('policy.form.stakeholder_name')} 
@@ -104,31 +100,30 @@ const StakeholderInput = ({ t, stakeholders, onStakeholderChange, options = [] }
                 
                 <button 
                     onClick={handleAddStakeholder}
-                    className="flex items-center justify-center w-full py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition shadow-md"
+                    className="flex items-center justify-center w-full py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors"
                 >
                     <Plus className="w-4 h-4 mr-2" /> {t('policy.form.stakeholder_add')}
                 </button>
             </div>
 
-            {/* Lista de Stakeholders Añadidos */}
-            <div className="border-t border-sky-800/50 pt-4">
-                <h4 className="text-md font-semibold text-gray-200 mb-2">{t('policy.form.stakeholders')} ({stakeholders.length})</h4>
+            <div className="border-t border-slate-200 pt-4">
+                <h4 className="text-md font-medium text-slate-600 mb-2">{t('policy.form.stakeholders')} ({stakeholders.length})</h4>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                     {stakeholders.length === 0 ? (
-                        <p className="text-gray-500 text-sm">{t('policy.form.stakeholder_empty')}</p>
+                        <p className="text-slate-400 text-sm">{t('policy.form.stakeholder_empty')}</p>
                     ) : (
                         stakeholders.map(s => (
-                            <div key={s.id} className="flex justify-between items-start bg-sky-950/50 p-2 rounded-md hover:bg-sky-900/60">
+                            <div key={s.id} className="flex justify-between items-start bg-white p-2 rounded-md border border-slate-100 hover:bg-slate-50 shadow-sm">
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-white">{s.name}</p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-sm font-medium text-slate-800">{s.name}</p>
+                                    <p className="text-xs text-slate-500">
                                         {t(`stakeholder.category.${s.type}`)} - {s.ambito} - {t(s.position)}
                                     </p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveStakeholder(s.id)}
-                                    className="text-red-400 hover:text-red-300 p-1 ml-2"
+                                    className="text-red-500 hover:text-red-700 p-1 ml-2"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>

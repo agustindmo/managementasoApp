@@ -30,26 +30,26 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// Componente de Métrica (RESTORED)
+// Componente de Métrica (UPDATED FOR LIGHT THEME)
 const MetricCard = ({ title, value, icon: Icon, colorClass }) => (
-    <div className={`p-4 rounded-2xl border ${colorClass.border} ${colorClass.bg} shadow-2xl backdrop-blur-lg flex items-center space-x-4`}>
+    <div className={`p-4 rounded-2xl border ${colorClass.border} ${colorClass.bg} shadow-sm flex items-center space-x-4`}>
         <div className={`p-3 rounded-full ${colorClass.iconBg}`}>
             <Icon className={`w-6 h-6 ${colorClass.text}`} />
         </div>
         <div>
-            <p className="text-sm text-gray-400">{title}</p>
-            <p className="text-2xl font-bold text-white">{value}</p>
+            <p className="text-sm text-gray-500">{title}</p>
+            <p className="text-2xl font-bold text-gray-800">{value}</p>
         </div>
     </div>
 );
 
-// --- Custom Tooltip for Recharts ---
+// --- Custom Tooltip for Recharts (Light Theme) ---
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="p-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg">
-                <p className="text-white font-semibold">{label}</p>
-                <p className="text-sky-400">{`Count: ${payload[0].value}`}</p>
+            <div className="p-2 bg-white border border-gray-200 rounded-md shadow-lg text-sm">
+                <p className="text-gray-700 font-semibold">{label}</p>
+                <p className="text-sky-600">{`Count: ${payload[0].value}`}</p>
             </div>
         );
     }
@@ -141,8 +141,8 @@ const UserDashboardDisplay = ({ db }) => {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center p-8">
-                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                <p className="ml-3 text-sky-200">{t('director.loading')}</p>
+                <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
+                <p className="ml-3 text-gray-500">{t('director.loading')}</p>
             </div>
         );
     }
@@ -151,13 +151,13 @@ const UserDashboardDisplay = ({ db }) => {
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-                <h1 className="text-3xl font-bold text-white flex items-center mb-4 sm:mb-0">
-                    <SummaryIcon className="w-8 h-8 mr-3 text-sky-400" />
+                <h1 className="text-3xl font-bold text-gray-900 flex items-center mb-4 sm:mb-0">
+                    <SummaryIcon className="w-8 h-8 mr-3 text-sky-600" />
                     {t('user.title')}
                 </h1>
                 
                 {/* Header Filter (Position fix) */}
-                <div className="rounded-xl shadow w-full sm:max-w-xs border border-sky-700/50 bg-black/40 backdrop-blur-lg p-2 flex-shrink-0"> 
+                <div className="rounded-xl shadow-sm w-full sm:max-w-xs border border-gray-200 bg-white p-2 flex-shrink-0"> 
                     <SelectField 
                         label={t('director.filter_year')}
                         name="yearFilter" 
@@ -168,17 +168,17 @@ const UserDashboardDisplay = ({ db }) => {
                 </div>
             </div>
 
-            {/* Metric Cards (RESTORED) */}
+            {/* Metric Cards (UPDATED COLORS) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <MetricCard 
                     title={t('user.metric.projects')}
                     value={metrics.total}
                     icon={TrendingUp}
                     colorClass={{
-                        border: 'border-sky-700/50',
-                        bg: 'bg-black/40',
-                        iconBg: 'bg-sky-800/50',
-                        text: 'text-sky-400'
+                        border: 'border-sky-200',
+                        bg: 'bg-white',
+                        iconBg: 'bg-sky-100',
+                        text: 'text-sky-600'
                     }}
                 />
                 <MetricCard 
@@ -186,10 +186,10 @@ const UserDashboardDisplay = ({ db }) => {
                     value={metrics.inProcess}
                     icon={TrendingUp}
                     colorClass={{
-                        border: 'border-green-700/50',
-                        bg: 'bg-black/40',
-                        iconBg: 'bg-green-800/50',
-                        text: 'text-green-400'
+                        border: 'border-blue-200',
+                        bg: 'bg-white',
+                        iconBg: 'bg-blue-100',
+                        text: 'text-blue-600'
                     }}
                 />
                 <MetricCard 
@@ -197,19 +197,19 @@ const UserDashboardDisplay = ({ db }) => {
                     value={metrics.completed}
                     icon={TrendingUp}
                     colorClass={{
-                        border: 'border-gray-700/50',
-                        bg: 'bg-black/40',
-                        iconBg: 'bg-gray-800/50',
-                        text: 'text-gray-400'
+                        border: 'border-indigo-200',
+                        bg: 'bg-white',
+                        iconBg: 'bg-indigo-100',
+                        text: 'text-indigo-600'
                     }}
                 />
             </div>
 
-            {/* Charts (With final spacing fix for Pie Chart) */}
+            {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
                 {/* --- 1. Institution Distribution (IMPROVED WITH RECHARTS) --- */}
-                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden h-96 flex flex-col">
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden h-96 flex flex-col">
                     <CardTitle title={t('user.metric.institution_title')} icon={Building} />
                     <div className="p-4 flex-1">
                         {institutionChartData.length > 0 ? (
@@ -219,22 +219,22 @@ const UserDashboardDisplay = ({ db }) => {
                                     layout="vertical"
                                     margin={{ top: 0, right: 10, left: 30, bottom: 0 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                                     <XAxis 
                                         type="number" 
                                         stroke="#9ca3af" 
                                         allowDecimals={false} 
-                                        tick={{ fontSize: 12, fill: '#9ca3af' }} 
+                                        tick={{ fontSize: 12, fill: '#6b7280' }} 
                                     />
                                     <YAxis
                                         dataKey="name"
                                         type="category"
                                         stroke="#9ca3af"
                                         width={100} // Adjust width for labels
-                                        tick={{ fontSize: 12, fill: '#e5e7eb' }}
+                                        tick={{ fontSize: 12, fill: '#374151' }}
                                         tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value} // Truncate long labels
                                     />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(14, 165, 233, 0.1)' }} />
                                     <Bar dataKey="count" fill="#0ea5e9" barSize={15} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -243,15 +243,15 @@ const UserDashboardDisplay = ({ db }) => {
                 </div>
 
                 {/* 2. Instrument Title (Standard Bar Chart) */}
-                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden h-96">
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden h-96">
                     <CardTitle title={t('user.metric.instrument_title')} icon={Briefcase} />
                     <div className="p-4">
-                        <SimpleBarChart data={instrumentChartData} fillColor="#82ca9d" />
+                        <SimpleBarChart data={instrumentChartData} fillColor="#0284c7" />
                     </div>
                 </div>
 
-                {/* 3. Sector Distribution (Pie Chart - Label Overlap Fix Applied) */}
-                <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden h-96 flex flex-col">
+                {/* 3. Sector Distribution (Pie Chart) */}
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden h-96 flex flex-col">
                     <CardTitle title={t('user.metric.sector_distribution')} icon={Users2} />
                     <div className="p-4 pt-8 pb-8 flex-1 flex items-center justify-center">
                         {sectorChartData.length > 0 ? (

@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, remove } from 'firebase/database';
-import { Loader2, Truck, ArrowUp, ArrowDown, PlusCircle, Edit, Trash2, Link } from 'lucide-react';
+import { Loader2, Handshake, ArrowUp, ArrowDown, PlusCircle, Edit, Trash2, Link } from 'lucide-react';
 import { getDbPaths } from '../../services/firebase.js';
-import { ALL_FILTER_OPTION, PROVIDER_TABLE_COLUMNS } from '../../utils/constants.js';
+import { ALL_FILTER_OPTION, PARTNER_TABLE_COLUMNS } from '../../utils/constants.js';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
 
-const snapshotToArray = (snapshot) => { if (!snapshot.exists()) return []; const val = snapshot.val(); return Object.keys(val).map(key => ({ id: key, ...val[key] })); };
-const formatCurrency = (value) => { const numericValue = parseFloat(value) || 0; return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numericValue); };
+const snapshotToArray = (snapshot) => { 
+    if (!snapshot.exists()) return []; 
+    const val = snapshot.val(); 
+    return Object.keys(val).map(key => ({ id: key, ...val[key] })); 
+};
 
 const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, currentFilters, t }) => {
     const label = t(column.labelKey); 
@@ -21,20 +24,28 @@ const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterCh
                     <span className="font-bold">{label}</span> {sortIcon}
                 </div>
                 {column.filterable && (
-                     <input type={column.type === 'number' ? 'number' : 'text'} placeholder={`${t('policy.search')} ${label}`} value={currentFilters[column.key] || ''} onChange={(e) => onFilterChange(column.key, e.target.value)} className="text-xs p-1 border border-slate-300 rounded focus:ring-blue-500 focus:border-blue-500 min-w-[100px] bg-white text-slate-800" />
+                     <input 
+                        type='text' 
+                        placeholder={`${t('policy.search')} ${label}`} 
+                        value={currentFilters[column.key] || ''} 
+                        onChange={(e) => onFilterChange(column.key, e.target.value)} 
+                        className="text-xs p-1 border border-slate-300 rounded focus:ring-blue-500 focus:border-blue-500 min-w-[100px] bg-white text-slate-800" 
+                    />
                 )}
             </div>
         </th>
     );
 };
 
-const ProviderTableRow = ({ item, onEdit, onDelete, isAdmin }) => (
+const PartnerTableRow = ({ item, onEdit, onDelete, isAdmin }) => (
     <tr className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
         <td className="px-6 py-3 text-sm font-medium text-slate-900">{item.name}</td>
-        <td className="px-6 py-3 text-sm text-slate-600">{item.type}</td>
-        <td className="px-6 py-3 text-sm text-slate-600">{item.productService}</td>
-        <td className="px-6 py-3 text-sm text-red-600 font-semibold">{formatCurrency(item.amount)}</td>
-        <td className="px-6 py-3 text-sm text-slate-600">{item.startDate}</td>
+        <td className="px-6 py-3 text-sm text-slate-600">{item.area}</td>
+        <td className="px-6 py-3 text-sm text-slate-600">{item.contact_person}</td>
+        <td className="px-6 py-3 text-sm text-slate-600">{item.contact_email}</td>
+        <td className="px-6 py-3 text-sm text-slate-600">
+             {item.agreement_link ? <a href={item.agreement_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex items-center"><Link className="w-4 h-4 mr-1" /> Link</a> : 'N/A'}
+        </td>
         <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
             {isAdmin && (
                 <div className="flex space-x-2 justify-end">
@@ -46,7 +57,7 @@ const ProviderTableRow = ({ item, onEdit, onDelete, isAdmin }) => (
     </tr>
 );
 
-const FinanceProviderTable = ({ db, onOpenForm, role }) => { 
+const FinancePartnerTable = ({ db, onOpenForm, role }) => { 
     const { t } = useTranslation(); 
     const isAdmin = role === 'admin';
     const [dataItems, setDataItems] = useState([]);
@@ -57,10 +68,10 @@ const FinanceProviderTable = ({ db, onOpenForm, role }) => {
     useEffect(() => {
         if (!db) return;
         setIsLoading(true); 
-        const dataRef = ref(db, getDbPaths().financeProviders); 
+        const dataRef = ref(db, getDbPaths().financePartners); 
         const unsubscribe = onValue(dataRef, (snapshot) => {
             try { setDataItems(snapshotToArray(snapshot)); } 
-            catch (e) { console.error("Error processing Provider snapshot:", e); } 
+            catch (e) { console.error("Error processing Partner snapshot:", e); } 
             finally { setIsLoading(false); }
         });
         return () => unsubscribe();
@@ -68,7 +79,7 @@ const FinanceProviderTable = ({ db, onOpenForm, role }) => {
 
     const filteredAndSortedItems = useMemo(() => {
         let finalData = dataItems.filter(item => {
-            for (const column of PROVIDER_TABLE_COLUMNS) {
+            for (const column of PARTNER_TABLE_COLUMNS) {
                 const key = column.key;
                 const filterValue = filters[key];
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
@@ -79,9 +90,8 @@ const FinanceProviderTable = ({ db, onOpenForm, role }) => {
         });
         if (sort.key) {
             finalData.sort((a, b) => {
-                const aValue = a[sort.key] || (sort.key === 'amount' ? 0 : '');
-                const bValue = b[sort.key] || (sort.key === 'amount' ? 0 : '');
-                if (sort.key === 'amount') return (sort.direction === 'asc' ? 1 : -1) * (aValue - bValue);
+                const aValue = a[sort.key] || '';
+                const bValue = b[sort.key] || '';
                 return (sort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
             });
         }
@@ -90,37 +100,45 @@ const FinanceProviderTable = ({ db, onOpenForm, role }) => {
 
     const handleDelete = async (id) => {
         if (db && isAdmin && window.confirm(t('policy.confirm_delete'))) { 
-            try { await remove(ref(db, `${getDbPaths().financeProviders}/${id}`)); } catch (e) { console.error("Error deleting provider:", e); }
+            try { await remove(ref(db, `${getDbPaths().financePartners}/${id}`)); } catch (e) { console.error("Error deleting partner:", e); }
         }
     };
 
     const handleSortChange = (key) => setSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
     const handleFilterChange = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
 
-    if (isLoading) return <div className="flex justify-center items-center h-48"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /><p className="ml-3 text-slate-500">{t('finance.providers.loading')}</p></div>;
+    if (isLoading) return <div className="flex justify-center items-center h-48"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /><p className="ml-3 text-slate-500">{t('finance.partners.loading')}</p></div>;
     
     return (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
                 <div className="flex items-center space-x-3">
-                    <Truck className="w-5 h-5 text-blue-600" />
-                    <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">{`${t('finance.tab.providers')} (${filteredAndSortedItems.length})`}</h2>
+                    <Handshake className="w-5 h-5 text-blue-600" />
+                    <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">{`${t('finance.relations.partner.title')} (${filteredAndSortedItems.length})`}</h2>
                 </div>
                 <div className="flex space-x-2">
-                    {isAdmin && <button onClick={() => onOpenForm(null)} className="flex items-center space-x-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition shadow-md"><PlusCircle className="w-4 h-4" /><span>{t('finance.providers.add')}</span></button>}
+                    {isAdmin && (
+                        <button 
+                            onClick={() => onOpenForm(null)} 
+                            className="flex items-center space-x-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition shadow-md"
+                        >
+                            <PlusCircle className="w-4 h-4" />
+                            <span>{t('finance.relations.partner.add')}</span>
+                        </button>
+                    )}
                 </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200">
                     <thead className="bg-slate-50">
-                        <tr>{PROVIDER_TABLE_COLUMNS.map(column => (<TableHeaderWithControls key={column.key} column={column} currentSort={sort} onSortChange={handleSortChange} onFilterChange={handleFilterChange} currentFilters={filters} t={t} />))}</tr>
+                        <tr>{PARTNER_TABLE_COLUMNS.map(column => (<TableHeaderWithControls key={column.key} column={column} currentSort={sort} onSortChange={handleSortChange} onFilterChange={handleFilterChange} currentFilters={filters} t={t} />))}</tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-200">
-                        {filteredAndSortedItems.length > 0 ? filteredAndSortedItems.map(item => <ProviderTableRow key={item.id} item={item} onEdit={() => onOpenForm(item)} onDelete={() => handleDelete(item.id)} isAdmin={isAdmin} />) : <tr><td colSpan={PROVIDER_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-slate-500">{t('press_log.no_records')}</td></tr>}
+                        {filteredAndSortedItems.length > 0 ? filteredAndSortedItems.map(item => <PartnerTableRow key={item.id} item={item} onEdit={() => onOpenForm(item)} onDelete={() => handleDelete(item.id)} isAdmin={isAdmin} />) : <tr><td colSpan={PARTNER_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-slate-500">{t('press_log.no_records')}</td></tr>}
                     </tbody>
                 </table>
             </div>
         </div>
     );
 };
-export default FinanceProviderTable;
+export default FinancePartnerTable;

@@ -1,5 +1,3 @@
-// src/components/dashboards/StakeholderMapDashboard.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, Loader2, Map as MapIcon, LayoutList, ArrowUp, ArrowDown, PieChart, Target } from 'lucide-react'; 
 import { ref, onValue } from 'firebase/database';
@@ -17,7 +15,6 @@ import {
     POSITION_SCORE_MAP,
 } from '../../utils/constants.js';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
-// --- NUEVO: Importar Recharts Components ---
 import RechartsTreemap from '../charts/RechartsTreemap.jsx';
 import { 
     ScatterChart, 
@@ -30,37 +27,34 @@ import {
 } from 'recharts';
 
 
-// --- Recharts Scatter Chart Component ---
 const StakeholderScatterChart = ({ data, t }) => {
     
-    // Custom Tooltip to show the stakeholder name and coordinates (Role/Position)
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             const pointData = payload[0].payload;
             return (
-                <div className="p-2 border border-sky-700/50 bg-black/80 rounded-lg text-sm text-white shadow-xl">
-                    <p className="font-semibold text-sky-300">{pointData.name}</p>
-                    <p>{`${t('stakeholder.influence') || 'Influence'} (X): ${pointData.x}`}</p>
-                    <p>{`${t('stakeholder.position_label') || 'Position'} (Y): ${pointData.y}`}</p>
+                <div className="p-2 bg-white border border-gray-200 rounded-md shadow-lg text-sm">
+                    <p className="font-semibold text-sky-700">{pointData.name}</p>
+                    <p className="text-gray-600">{`${t('stakeholder.influence') || 'Influence'} (X): ${pointData.x}`}</p>
+                    <p className="text-gray-600">{`${t('stakeholder.position_label') || 'Position'} (Y): ${pointData.y}`}</p>
                 </div>
             );
         }
         return null;
     };
     
-    const maxInfluence = Math.max(...Object.values(ROLE_SCORE_MAP)); // Max X value (e.g., 4)
-    const maxPosition = Math.max(...Object.values(POSITION_SCORE_MAP)); // Max Y value (e.g., 3)
+    const maxInfluence = Math.max(...Object.values(ROLE_SCORE_MAP)); 
+    const maxPosition = Math.max(...Object.values(POSITION_SCORE_MAP)); 
     
     return (
         <div style={{ width: '100%', height: '350px' }}>
             <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                     <CartesianGrid 
-                        stroke="#334155" 
+                        stroke="#e2e8f0" 
                         strokeDasharray="3 3"
                     />
 
-                    {/* X-Axis (Role/Influence) - Scores 1-4 */}
                     <XAxis 
                         type="number" 
                         dataKey="x" 
@@ -68,12 +62,11 @@ const StakeholderScatterChart = ({ data, t }) => {
                         domain={[1, maxInfluence]}
                         interval={0}
                         tickCount={maxInfluence} 
-                        stroke="#94a3b8"
-                        axisLine={{ stroke: '#334155' }}
-                        label={{ value: t('stakeholder.influence') || 'Influence (Role)', position: 'bottom', stroke: '#94a3b8', dy: 10 }}
+                        stroke="#64748b"
+                        tick={{ fill: '#64748b' }}
+                        label={{ value: t('stakeholder.influence') || 'Influence (Role)', position: 'bottom', fill: '#64748b', dy: 10 }}
                     />
 
-                    {/* Y-Axis (Position/Interest) - Scores 1-3 */}
                     <YAxis 
                         type="number" 
                         dataKey="y" 
@@ -81,30 +74,28 @@ const StakeholderScatterChart = ({ data, t }) => {
                         domain={[1, maxPosition]} 
                         interval={0}
                         tickCount={maxPosition} 
-                        stroke="#94a3b8"
-                        axisLine={{ stroke: '#334155' }}
-                        label={{ value: t('stakeholder.position_label') || 'Position (Interest)', position: 'left', angle: -90, stroke: '#94a3b8', dx: -10 }}
+                        stroke="#64748b"
+                        tick={{ fill: '#64748b' }}
+                        label={{ value: t('stakeholder.position_label') || 'Position (Interest)', position: 'left', angle: -90, fill: '#64748b', dx: -10 }}
                     />
                     
-                    <Tooltip cursor={{ strokeDasharray: '3 3', stroke: '#cbd5e1' }} content={<CustomTooltip t={t} />} />
+                    <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip t={t} />} />
                     
                     <Scatter 
                         name="Stakeholders" 
                         data={data} 
-                        fill="#38bdf8" 
+                        fill="#0ea5e9" 
                         line={false} 
                         shape="circle" 
-                        strokeWidth={2}
+                        strokeWidth={1}
+                        stroke="#0284c7"
                     />
                 </ScatterChart>
             </ResponsiveContainer>
         </div>
     );
 };
-// --- END: Recharts Scatter Chart Component ---
 
-
-// ... (snapshotToArray and TabButton remain the same) ...
 const snapshotToArray = (snapshot) => {
     if (!snapshot.exists()) return [];
     const val = snapshot.val();
@@ -118,80 +109,13 @@ const TabButton = ({ isActive, onClick, label }) => (
         onClick={onClick}
         className={`px-4 py-2 text-sm font-semibold transition-all duration-300 rounded-t-lg 
             ${isActive 
-                ? 'bg-sky-700 text-white shadow-md' 
-                : 'bg-black/30 text-gray-400 hover:bg-black/50 hover:text-white'}`
+                ? 'bg-sky-600 text-white shadow-md' 
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`
         }
     >
         {label}
     </button>
 );
-// --- Componente DashboardMetric (Reused from Director/User Dashboards) ---
-const DashboardMetric = ({ value, label, color = 'text-sky-400', icon: Icon }) => (
-    <div className="p-4 rounded-xl shadow-lg flex items-center justify-between border border-sky-700/50 bg-sky-950/50 transition-all hover:bg-sky-950/70">
-        <div className="flex flex-col space-y-1">
-            <p className="text-sm text-gray-400 font-medium">{label}</p>
-            <p className={`text-3xl font-extrabold ${color}`}>{value}</p>
-        </div>
-        
-        <div className={`p-3 rounded-full ${color.replace('text', 'bg')} opacity-80 shadow-md`}>
-             <Icon className={`w-6 h-6 text-white`} />
-        </div>
-    </div>
-);
-// ... (end of helper components) ...
-
-
-// --- MODIFIED Component: StakeholderPositionChart (Data Preparation Wrapper) ---
-const StakeholderPositionChart = ({ agendaItems, selectedAgendaId, t }) => {
-    const getRoleScore = (roleKey) => ROLE_SCORE_MAP[roleKey] || 1; // Default to 1
-    const getPositionScore = (posKey) => POSITION_SCORE_MAP[posKey] || 1; // Default to 1
-    
-    const stakeholdersToPlot = useMemo(() => {
-        let itemsToProcess = [];
-        if (!selectedAgendaId || !agendaItems) {
-            itemsToProcess = [];
-        } else {
-            const selectedItem = agendaItems.find(item => item.id === selectedAgendaId);
-            itemsToProcess = selectedItem ? [selectedItem] : [];
-        }
-        
-        const uniqueStakeholderMap = new Map(); 
-        
-        itemsToProcess.forEach(item => {
-            (item.stakeholders || []).forEach(s => {
-                if (!uniqueStakeholderMap.has(s.name)) {
-                    uniqueStakeholderMap.set(s.name, s);
-                }
-            });
-        });
-        
-        // Transform data into Recharts scatter format: [{ name, x: raw_score, y: raw_score }]
-        return Array.from(uniqueStakeholderMap.values()).map(s => { 
-            const xScore = getRoleScore(s.role); // Influence (1-4)
-            const yScore = getPositionScore(s.position); // Position (1-3)
-            return {
-                name: s.name,
-                x: xScore, // Pass raw score
-                y: yScore, // Pass raw score
-                role: t(s.role),
-                position: t(s.position)
-            };
-        });
-    }, [agendaItems, selectedAgendaId, t]);
-    
-    // RENDER RECHARTS SCATTER CHART
-    return (
-        <div className="w-full p-4">
-            {stakeholdersToPlot.length > 0 ? (
-                <StakeholderScatterChart data={stakeholdersToPlot} t={t} />
-            ) : (
-                <p className="text-gray-500 text-center py-8">{t('stakeholder.select_agenda_or_no_data')}</p>
-            )}
-        </div>
-    );
-};
-// --- END: MODIFIED StakeholderPositionChart ---
-
 
 const StakeholderMapDashboard = ({ db }) => {
     const { t } = useTranslation(); 
@@ -204,7 +128,6 @@ const StakeholderMapDashboard = ({ db }) => {
     const [selectedAgendaId, setSelectedAgendaId] = useState(null);
     const [yearFilter, setYearFilter] = useState(ALL_YEAR_FILTER); 
 
-    // 1. Fetch data (unchanged)
     useEffect(() => {
         if (!db) return;
         setIsLoading(true);
@@ -231,7 +154,6 @@ const StakeholderMapDashboard = ({ db }) => {
         };
     }, [db]);
 
-    // 2. Filtrar datos por Año
     const filteredAgendaItems = useMemo(() => {
         if (yearFilter === ALL_YEAR_FILTER) return agendaItems;
         return agendaItems.filter(item => item.ano === yearFilter);
@@ -251,7 +173,6 @@ const StakeholderMapDashboard = ({ db }) => {
         }
     }, [filteredAgendaItems, selectedAgendaId]);
 
-    // 3. Aggregate Stakeholders (FIXED Treemap data structure)
     const { stakeholderMetrics, treemapChartData } = useMemo(() => {
         const treemapDataByStakeholder = {}; 
         let totalEngagements = 0;
@@ -262,7 +183,6 @@ const StakeholderMapDashboard = ({ db }) => {
             (institutions || []).forEach(instName => {
                 if (!instName || instName === 'N/A') return;
                 
-                // Enforce lowercasing and trimming for robust grouping
                 const nameKey = instName.trim().toLowerCase(); 
                 
                 uniqueNames.add(nameKey);
@@ -271,7 +191,6 @@ const StakeholderMapDashboard = ({ db }) => {
             });
         });
         
-        // --- FIX: Formatear datos a NESTED structure for robust Treemap rendering ---
         const flatData = Object.keys(treemapDataByStakeholder).map(key => ({ 
             name: key, 
             value: treemapDataByStakeholder[key]
@@ -332,7 +251,6 @@ const StakeholderMapDashboard = ({ db }) => {
         return { categorizedStakeholders: categorized };
     }, [filteredAgendaItems]); 
 
-    // 4. Filtering and Sorting Logic (unchanged)
     const filteredStakeholders = useMemo(() => {
         let currentData = categorizedStakeholders[activeCategoryTab] || [];
         currentData = currentData.filter(item => {
@@ -372,11 +290,10 @@ const StakeholderMapDashboard = ({ db }) => {
         return currentData; 
     }, [categorizedStakeholders, activeCategoryTab, filters, sort]);
 
-    // ... (código existente de handlers y TableHeader) ...
     const handleSortChange = (key) => {
         setSort(prev => ({
             key,
-            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
         }));
     };
     const handleFilterChange = (key, value) => {
@@ -413,12 +330,12 @@ const StakeholderMapDashboard = ({ db }) => {
         return (
             <th 
                 key={column.key} 
-                className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider whitespace-nowrap"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
             >
                 <div className="flex flex-col space-y-1">
                     <div className="flex items-center">
                         <span 
-                            className={`cursor-pointer font-medium ${column.sortable ? 'hover:text-white transition-colors' : ''}`}
+                            className={`cursor-pointer font-medium ${column.sortable ? 'hover:text-sky-700 transition-colors' : ''}`}
                             onClick={() => column.sortable && onSortChange(column.key)}
                         >
                             {label}
@@ -432,17 +349,17 @@ const StakeholderMapDashboard = ({ db }) => {
                                 placeholder={`${t('stakeholder.search_placeholder') || 'Search'} ${label}`} 
                                 value={currentFilters[column.key] || ''}
                                 onChange={(e) => onFilterChange(column.key, e.target.value)}
-                                className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[80px]"
+                                className="text-xs p-1 border border-gray-300 bg-white text-gray-900 rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[80px]"
                             />
                         ) : (
                             <select
                                 value={currentFilters[column.key] || ALL_FILTER_OPTION}
                                 onChange={(e) => onFilterChange(column.key, e.target.value)}
-                                className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[80px]"
+                                className="text-xs p-1 border border-gray-300 bg-white text-gray-900 rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[80px]"
                             >
-                                <option value={ALL_FILTER_OPTION} className="bg-sky-900">{t('stakeholder.category.all') || 'All'}</option>
+                                <option value={ALL_FILTER_OPTION} className="bg-gray-50">{t('stakeholder.category.all') || 'All'}</option>
                                 {options.map(option => (
-                                    <option key={option} value={option} className="bg-sky-900">{getCategoryLabel(option)}</option>
+                                    <option key={option} value={option} className="bg-white">{getCategoryLabel(option)}</option>
                                 ))}
                             </select>
                         )
@@ -454,28 +371,74 @@ const StakeholderMapDashboard = ({ db }) => {
 
 
     if (!db) { 
-        return <div className="p-8 text-center bg-red-900/50 border border-red-700 rounded-xl m-8"><p className="text-lg font-semibold text-red-300">{t('stakeholder.db_fail') || 'Database connection failed.'}</p></div>;
+        return <div className="p-8 text-center bg-red-50 border border-red-200 rounded-xl m-8"><p className="text-lg font-semibold text-red-600">{t('stakeholder.db_fail') || 'Database connection failed.'}</p></div>;
     }
     if (isLoading) {
         return (
             <div className="flex justify-center items-center p-8">
-                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                <p className="ml-3 text-sky-200">{t('stakeholder.loading') || 'Loading data...'}</p>
+                <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
+                <p className="ml-3 text-gray-500">{t('stakeholder.loading') || 'Loading data...'}</p>
             </div>
         );
     }
 
     const agendaOptions = filteredAgendaItems.map(item => ({ value: item.id, label: item.nombre || 'Untitled' }));
 
+    const StakeholderPositionChart = ({ agendaItems, selectedAgendaId, t }) => {
+        const getRoleScore = (roleKey) => ROLE_SCORE_MAP[roleKey] || 1; 
+        const getPositionScore = (posKey) => POSITION_SCORE_MAP[posKey] || 1; 
+        
+        const stakeholdersToPlot = useMemo(() => {
+            let itemsToProcess = [];
+            if (!selectedAgendaId || !agendaItems) {
+                itemsToProcess = [];
+            } else {
+                const selectedItem = agendaItems.find(item => item.id === selectedAgendaId);
+                itemsToProcess = selectedItem ? [selectedItem] : [];
+            }
+            
+            const uniqueStakeholderMap = new Map(); 
+            
+            itemsToProcess.forEach(item => {
+                (item.stakeholders || []).forEach(s => {
+                    if (!uniqueStakeholderMap.has(s.name)) {
+                        uniqueStakeholderMap.set(s.name, s);
+                    }
+                });
+            });
+            
+            return Array.from(uniqueStakeholderMap.values()).map(s => { 
+                const xScore = getRoleScore(s.role); 
+                const yScore = getPositionScore(s.position); 
+                return {
+                    name: s.name,
+                    x: xScore, 
+                    y: yScore, 
+                    role: t(s.role),
+                    position: t(s.position)
+                };
+            });
+        }, [agendaItems, selectedAgendaId, t]);
+        
+        return (
+            <div className="w-full p-4">
+                {stakeholdersToPlot.length > 0 ? (
+                    <StakeholderScatterChart data={stakeholdersToPlot} t={t} />
+                ) : (
+                    <p className="text-gray-500 text-center py-8">{t('stakeholder.select_agenda_or_no_data')}</p>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-                <h1 className="text-3xl font-bold text-white flex items-center">
-                    <MapIcon className="w-8 h-8 mr-3 text-sky-400" />
+                <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                    <MapIcon className="w-8 h-8 mr-3 text-sky-600" />
                     {t('stakeholder.title') || 'Stakeholder Map'}
                 </h1>
-                <div className="rounded-xl shadow max-w-xs border border-sky-700/50 bg-black/40 backdrop-blur-lg p-2 mt-4 sm:mt-0">
+                <div className="rounded-xl shadow-sm max-w-xs border border-gray-200 bg-white p-2 mt-4 sm:mt-0">
                     <SelectField 
                         label={t('director.filter_year') || 'Filter Year'}
                         name="yearFilter" 
@@ -486,20 +449,18 @@ const StakeholderMapDashboard = ({ db }) => {
                 </div>
             </div>
             
-            {/* --- METRICS COUNTERS (TOTAL UNIQUE & ENGAGEMENT) --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="p-4 rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg flex flex-col items-center justify-center">
-                    <p className="text-4xl font-extrabold text-white">{stakeholderMetrics.totalUnique}</p>
-                    <p className="text-sm text-gray-400 mt-1">{t('stakeholder.total_unique') || 'Total Unique Public Stakeholders (Institutions)'}</p>
+                <div className="p-4 rounded-2xl border border-gray-200 bg-white shadow-sm flex flex-col items-center justify-center hover:shadow-md transition-shadow">
+                    <p className="text-4xl font-extrabold text-gray-800">{stakeholderMetrics.totalUnique}</p>
+                    <p className="text-sm text-gray-500 mt-1">{t('stakeholder.total_unique') || 'Total Unique Public Stakeholders (Institutions)'}</p>
                 </div>
-                <div className="p-4 rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg flex flex-col items-center justify-center">
-                    <p className="text-4xl font-extrabold text-sky-400">{stakeholderMetrics.totalEngagements}</p>
-                    <p className="text-sm text-gray-400 mt-1">{t('stakeholder.total_engagements') || 'Total Engagements Logged (Public Stakeholders)'}</p>
+                <div className="p-4 rounded-2xl border border-gray-200 bg-white shadow-sm flex flex-col items-center justify-center hover:shadow-md transition-shadow">
+                    <p className="text-4xl font-extrabold text-sky-600">{stakeholderMetrics.totalEngagements}</p>
+                    <p className="text-sm text-gray-500 mt-1">{t('stakeholder.total_engagements') || 'Total Engagements Logged (Public Stakeholders)'}</p>
                 </div>
             </div>
 
-            {/* --- CHARTS: TREEMAP (ENGAGEMENT BY STAKEHOLDER) --- */}
-            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8 h-96">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-8 h-96">
                 <CardTitle title={`${t('stakeholder.all_engagements_title') || 'Engagements by Public Stakeholder'} (${yearFilter})`} icon={PieChart} />
                 <div className="p-4 h-[calc(100%-4rem)]">
                     {treemapChartData && treemapChartData.length > 0 ? (
@@ -510,8 +471,7 @@ const StakeholderMapDashboard = ({ db }) => {
                 </div>
             </div>
 
-            {/* --- CHARTS: SCATTER CHART (POSITION MATRIX) --- */}
-            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden mb-8 h-auto">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-8 h-auto">
                 <CardTitle title={`${t('stakeholder.chart.title') || 'Position Matrix'} (${yearFilter})`} icon={Target} />
                 <div className="p-4">
                     {agendaOptions.length > 0 ? (
@@ -538,10 +498,9 @@ const StakeholderMapDashboard = ({ db }) => {
             </div>
 
 
-            {/* --- TABLE: FILTERED STAKEHOLDERS LIST --- */}
-            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-                <div className="p-4 flex gap-2 border-b border-sky-700/50 bg-sky-950/30">
-                    <h3 className="text-md font-semibold text-white mr-4 self-end">{t('stakeholder.filter_by_type') || 'Filter By Type:'}</h3>
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="p-4 flex gap-2 border-b border-gray-200 bg-gray-50">
+                    <h3 className="text-md font-semibold text-gray-700 mr-4 self-end">{t('stakeholder.filter_by_type') || 'Filter By Type:'}</h3>
                     {STAKEHOLDER_CATEGORY_OPTIONS.map(key => (
                         <TabButton
                             key={key}
@@ -557,8 +516,8 @@ const StakeholderMapDashboard = ({ db }) => {
                 </div>
                 <CardTitle title={`${getCategoryLabel(activeCategoryTab)} ${t('sidebar.stakeholder_map')} (${filteredStakeholders.length}) (${yearFilter})`} icon={LayoutList} />
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-sky-800/50">
-                        <thead className="bg-sky-900/70">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
                             <tr>
                                 {STAKEHOLDER_TABLE_COLUMNS.map(column => (
                                     <TableHeaderWithControls
@@ -572,16 +531,16 @@ const StakeholderMapDashboard = ({ db }) => {
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
+                        <tbody className="bg-white divide-y divide-gray-200">
                             {filteredStakeholders.length > 0 ? (
                                 filteredStakeholders.map((item, index) => (
-                                    <tr key={index} className="hover:bg-sky-900/60 transition-colors">
-                                        <td className="px-6 py-2 text-sm font-medium text-white truncate max-w-[150px]" title={item.name}>{item.name}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400 capitalize">{item.ambito}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[200px]" title={item.agendaItems}>{item.agendaItems}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={item.sectors}>{item.sectors}</td>
-                                        <td className="px-6 py-2 text-sm text-gray-400">{item.years}</td>
-                                        <td className="px-6 py-2 text-sm font-bold text-sky-400">{item.totalCount}</td>
+                                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-3 text-sm font-medium text-gray-900 truncate max-w-[150px]" title={item.name}>{item.name}</td>
+                                        <td className="px-6 py-3 text-sm text-gray-600 capitalize">{item.ambito}</td>
+                                        <td className="px-6 py-3 text-sm text-gray-600 truncate max-w-[200px]" title={item.agendaItems}>{item.agendaItems}</td>
+                                        <td className="px-6 py-3 text-sm text-gray-600 truncate max-w-[150px]" title={item.sectors}>{item.sectors}</td>
+                                        <td className="px-6 py-3 text-sm text-gray-600">{item.years}</td>
+                                        <td className="px-6 py-3 text-sm font-bold text-sky-600">{item.totalCount}</td>
                                     </tr>
                                 ))
                             ) : (

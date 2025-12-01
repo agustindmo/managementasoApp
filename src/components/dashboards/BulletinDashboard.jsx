@@ -1,5 +1,3 @@
-// src/components/dashboards/BulletinDashboard.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, remove } from 'firebase/database';
 import { Megaphone, Loader2, PlusCircle, Trash2, Edit } from 'lucide-react';
@@ -13,80 +11,56 @@ const snapshotToArray = (snapshot) => {
     return Object.keys(val).map(key => ({
         id: key,
         ...val[key],
-    })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // Ordenar por más reciente
+    })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); 
 };
 
-// --- Componente para parsear y renderizar contenido con enlaces ---
 const RenderContent = ({ content }) => {
     if (!content) return null;
-
-    // Regex simple para encontrar URLs
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = content.split(urlRegex);
 
     return (
-        <p className="text-sm text-gray-300 whitespace-pre-wrap">
+        <p className="text-sm text-slate-600 whitespace-pre-wrap">
             {parts.map((part, index) => {
                 if (part.match(urlRegex)) {
                     return (
-                        <a 
-                            key={index}
-                            href={part}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 underline"
-                        >
+                        <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">
                             {part}
                         </a>
                     );
                 }
-                return part; // Parte de texto normal
+                return part; 
             })}
         </p>
     );
 };
 
 
-// --- Componente de Tarjeta de Anuncio ---
 const AnnouncementCard = ({ item, t, isAdmin, onEdit, onDelete }) => {
-    const { 
-        title, 
-        content,
-        visibility,
-        createdAt
-    } = item;
-
+    const { title, content, visibility, createdAt } = item;
     const formattedDate = createdAt ? new Date(createdAt).toLocaleString() : t('live_feed.invalid_date');
     const visibilityLabel = t(`event.visibility.${visibility}`) || visibility;
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden flex flex-col">
-            <div className="p-4 bg-sky-900/70 border-b border-sky-700/50">
-                <h3 className="text-lg font-bold text-white">{title}</h3>
-                <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-gray-400">{formattedDate}</span>
-                    <span className="text-xs font-medium bg-sky-600 text-white px-2 py-0.5 rounded-full">{visibilityLabel}</span>
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-all">
+            <div className="p-4 bg-slate-50 border-b border-slate-100">
+                <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+                <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-slate-500">{formattedDate}</span>
+                    <span className="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{visibilityLabel}</span>
                 </div>
             </div>
             
-            <div className="p-4 space-y-3 flex-grow">
+            <div className="p-5 space-y-3 flex-grow">
                 <RenderContent content={content} />
             </div>
             
             {isAdmin && (
-                <div className="p-2 border-t border-sky-800/50 bg-black/30 flex justify-end space-x-2">
-                    <button
-                        onClick={onEdit}
-                        className="text-sky-400 hover:text-sky-200 p-1 rounded-full hover:bg-sky-800/50 transition"
-                        title={t('activity.form.edit_title')}
-                    >
+                <div className="p-3 border-t border-slate-100 bg-slate-50/50 flex justify-end space-x-2">
+                    <button onClick={onEdit} className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition" title="Edit">
                         <Edit className="w-4 h-4" />
                     </button>
-                    <button
-                        onClick={onDelete}
-                        className="text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
-                        title={t('admin.reject')}
-                    >
+                    <button onClick={onDelete} className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition" title="Delete">
                         <Trash2 className="w-4 h-4" />
                     </button>
                 </div>
@@ -95,39 +69,26 @@ const AnnouncementCard = ({ item, t, isAdmin, onEdit, onDelete }) => {
     );
 };
 
-// --- Componente Principal del Dashboard ---
 const BulletinDashboard = ({ userId, db, role }) => { 
     const { t } = useTranslation();
-    const [view, setView] = useState('cards'); // 'cards' or 'form'
+    const [view, setView] = useState('cards'); 
     const [activeRecord, setActiveRecord] = useState(null); 
     const [announcements, setAnnouncements] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     
     const isAdmin = role === 'admin';
     
-    // 1. Cargar Anuncios
     useEffect(() => {
         if (!db) return;
-        
         const dataRef = ref(db, getDbPaths().announcements);
-        
         const unsubscribe = onValue(dataRef, (snapshot) => {
-            try {
-                setAnnouncements(snapshotToArray(snapshot));
-            } catch (e) {
-                console.error("Error processing announcements snapshot:", e);
-            } finally {
-                setIsLoading(false);
-            }
-        }, (err) => {
-            console.error("Announcements subscription error:", err);
-            setIsLoading(false);
-        });
-
+            try { setAnnouncements(snapshotToArray(snapshot)); } 
+            catch (e) { console.error("Error processing announcements snapshot:", e); } 
+            finally { setIsLoading(false); }
+        }, (err) => { console.error("Announcements subscription error:", err); setIsLoading(false); });
         return () => unsubscribe();
     }, [db]);
 
-    // 2. Filtrar Anuncios por Visibilidad
     const visibleItems = useMemo(() => {
         if (isAdmin) return announcements;
         if (role === 'director' || role === 'directorinvitee') {
@@ -139,7 +100,6 @@ const BulletinDashboard = ({ userId, db, role }) => {
         return [];
     }, [announcements, role, isAdmin]);
 
-    // Handlers
     const handleOpenForm = (record = null) => {
         if (!isAdmin) return; 
         setActiveRecord(record);
@@ -162,8 +122,8 @@ const BulletinDashboard = ({ userId, db, role }) => {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center p-8">
-                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                <p className="ml-3 text-sky-200">{t('bulletin.loading')}</p>
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                <p className="ml-3 text-slate-500">{t('bulletin.loading')}</p>
             </div>
         );
     }
@@ -186,14 +146,14 @@ const BulletinDashboard = ({ userId, db, role }) => {
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-3xl font-bold text-white flex items-center">
-                    <Megaphone className="w-8 h-8 mr-3 text-sky-400" />
+                <h1 className="text-3xl font-bold text-slate-800 flex items-center">
+                    <Megaphone className="w-8 h-8 mr-3 text-blue-600" />
                     {t('sidebar.bulletin_board')}
                 </h1>
                 {isAdmin && (
                     <button
                         onClick={() => handleOpenForm(null)}
-                        className="flex items-center space-x-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 transition shadow-md"
+                        className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-md"
                     >
                         <PlusCircle className="w-4 h-4" />
                         <span>{t('bulletin.form.add_title')}</span>
@@ -215,7 +175,7 @@ const BulletinDashboard = ({ userId, db, role }) => {
                     ))}
                 </div>
             ) : (
-                <div className="text-center text-gray-500 p-8 bg-black/30 rounded-lg">
+                <div className="text-center text-slate-400 p-12 bg-slate-50 border border-dashed border-slate-300 rounded-xl">
                     <p>{t('bulletin.no_items')}</p>
                 </div>
             )}

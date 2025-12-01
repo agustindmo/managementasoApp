@@ -8,6 +8,7 @@ import { LogOut, Globe, Loader2 } from 'lucide-react';
 import { getDbPaths } from './services/firebase.js'; 
 import LoginScreen from './LoginScreen.jsx';
 import Sidebar from './components/Sidebar.jsx';
+import AdminMainDashboard from './components/dashboards/AdminMainDashboard.jsx'; // Import Main Dashboard
 import AdminDashboard from './components/dashboards/AdminDashboard.jsx';
 import UserDashboardDisplay from './components/dashboards/UserDashboard.jsx';
 import DirectorDashboardDisplay from './components/dashboards/DirectorDashboard.jsx';
@@ -36,14 +37,12 @@ import CommissionDashboard from './components/dashboards/CommissionDashboard.jsx
 import GovernanceDashboard from './components/dashboards/GovernanceDashboard.jsx';
 import BulletinDashboard from './components/dashboards/BulletinDashboard.jsx';
 
-
 // Placeholder views 
 const SectorDashboard = () => <div className="ml-64 p-8 text-center text-gray-600">Sector e Institución View (Placeholder)</div>;
 const PilarDashboard = () => <div className="ml-64 p-8 text-center text-gray-600">Pilar y Agenda View (Placeholder)</div>;
 const CondicionDashboard = () => <div className="ml-64 p-8 text-center text-gray-600">Condición e Instrumento View (Placeholder)</div>;
 
-
-// --- 1. CONFIGURATION FALLBACK ---
+// --- CONFIGURATION ---
 const HARDCODED_FALLBACK_CONFIG = {
     apiKey: "AIzaSyBC8dNvx1YFTrwJN74wuYWL7AzZg18cLso", 
     authDomain: "policyapp-e5b9e.firebaseapp.com",
@@ -61,7 +60,6 @@ const getFirebaseConfig = () => {
     }
     return HARDCODED_FALLBACK_CONFIG;
 };
-// --------------------------------------------------------
 
 function AppContent() {
     const { t, toggleLanguage, language } = useTranslation();
@@ -71,10 +69,12 @@ function AppContent() {
     const [role, setRole] = useState(null); 
     const [isAppInitialized, setIsAppInitialized] = useState(false); 
     const [activeView, setActiveView] = useState('resumen'); 
+    
+    // New State for Admin Module Navigation
+    const [activeModule, setActiveModule] = useState(null);
 
     const isReady = !!dbInstance && !!authInstance && isAppInitialized;
 
-    // 1. Firebase Initialization and Auth Setup
     useEffect(() => {
         let auth, db;
         const config = getFirebaseConfig(); 
@@ -108,7 +108,13 @@ function AppContent() {
                 unsubscribeRole = onValue(roleRef, (snapshot) => {
                     const assignedRole = snapshot.val() || 'pending'; 
                     setRole(assignedRole);
-                    if (assignedRole === 'admin') setActiveView('user_admin'); 
+                    
+                    // Initial Routing Logic
+                    if (assignedRole === 'admin') {
+                        // Admin starts at Main Dashboard (no module selected)
+                        setActiveModule(null);
+                        setActiveView('admin_main_dashboard'); 
+                    } 
                     else if (assignedRole === 'director') setActiveView('member_approvals');
                     else if (assignedRole === 'user' || assignedRole === 'userinvitee' || assignedRole === 'directorinvitee') setActiveView('resumen'); 
                     else setRole('pending');
@@ -116,6 +122,7 @@ function AppContent() {
             } else {
                 setUserId(null);
                 setRole(null);
+                setActiveModule(null);
                 if (unsubscribeRole) unsubscribeRole(); 
             }
         });
@@ -125,38 +132,28 @@ function AppContent() {
         };
     }, []);
 
-    // Effect to handle navigation when role changes
-    useEffect(() => {
-        
-        const commsBaseViews = ['media_stakeholder_map', 'bulletin_board']; 
-        const userBaseViews = ['resumen', 'logros', 'events', 'member_directory', 'governance', 'bulletin_board']; 
-        const directorBaseViews = ['resumen', 'logros', 'objectivos', 'stakeholder_map', 'agenda_view', 'events', 'member_directory', 'board_directory', 'public_affairs_directory', 'media_directory', 'partners_directory', 'commissions_directory', 'governance', ...commsBaseViews];
+    // Admin Module Selection Handler
+    const handleModuleSelect = (moduleId) => {
+        setActiveModule(moduleId);
+        // Set default view for each module
+        switch (moduleId) {
+            case 'members': setActiveView('user_admin'); break;
+            case 'public_affairs': setActiveView('resumen'); break;
+            case 'events_group': setActiveView('events'); break;
+            case 'communications': setActiveView('communications_log'); break;
+            case 'database': setActiveView('member_directory'); break;
+            case 'governance': setActiveView('governance'); break;
+            case 'finance': setActiveView('finance_dashboard'); break;
+            default: setActiveView('admin_main_dashboard');
+        }
+    };
 
-        // Vistas completas
-        const adminViews = ['user_admin', 'admin_profiles', 'new_member_request', 'finance_dashboard', 'finance_relations', 'policy_data', 'activity_log', 'communications_log', 'press_log', ...directorBaseViews];
-        const directorViews = ['user_profile', 'member_approvals', ...directorBaseViews];
-        const directorInviteeViews = [...directorBaseViews]; 
-        const userViews = ['user_profile', ...userBaseViews];
-        const userInviteeViews = [...userBaseViews]; 
-        
-        if (role === 'admin' && !adminViews.includes(activeView)) {
-            setActiveView('user_admin'); 
-        } 
-        else if (role === 'director' && !directorViews.includes(activeView)) {
-            setActiveView('member_approvals'); 
-        }
-        else if (role === 'directorinvitee' && !directorInviteeViews.includes(activeView)) {
-            setActiveView('resumen'); 
-        }
-        else if (role === 'user' && !userViews.includes(activeView)) {
-            setActiveView('resumen'); 
-        }
-        else if (role === 'userinvitee' && !userInviteeViews.includes(activeView)) {
-            setActiveView('resumen'); 
-        }
-    }, [role, activeView]);
+    const handleBackToDashboard = () => {
+        setActiveModule(null);
+        setActiveView('admin_main_dashboard');
+    };
+
     
-    // Function to handle logout
     const handleLogout = async () => {
         if (authInstance) {
             try { await signOut(authInstance); } 
@@ -164,31 +161,27 @@ function AppContent() {
         }
     };
 
-    // 2. Conditional Rendering/Routing
     const renderDashboardView = () => {
         if (!isReady) {
              return (
-                <div className="flex justify-center items-center h-screen bg-sky-950/90 text-white">
-                    <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                    <p className="ml-3 text-sky-200">Initializing Firebase services...</p>
+                <div className="flex justify-center items-center h-screen bg-white text-blue-600">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                    <p className="ml-3 text-gray-500">Initializing Firebase services...</p>
                  </div>
             );
         }
 
         if (!!userId && (!role || role === 'pending')) {
              return (
-                <div className="p-8 text-center bg-yellow-900/50 border border-yellow-700 rounded-xl m-8 min-h-screen text-yellow-100">
-                    <h2 className="text-2xl font-bold text-yellow-300 mb-4">Access Pending Approval</h2>
-                    <p className="text-yellow-100">
+                <div className="p-8 text-center bg-yellow-50 border border-yellow-200 rounded-xl m-8 min-h-screen text-yellow-800">
+                    <h2 className="text-2xl font-bold text-yellow-700 mb-4">Access Pending Approval</h2>
+                    <p className="text-yellow-800">
                         Your account is currently awaiting review and role assignment by an administrator.
                     </p>
-                    <p className="text-sm text-yellow-200 mt-2">
+                    <p className="text-sm text-yellow-600 mt-2">
                         Email: {authInstance?.currentUser?.email || 'N/A'}
                     </p>
-                    <button
-                        onClick={handleLogout}
-                        className="mt-6 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                    >
+                    <button onClick={handleLogout} className="mt-6 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm">
                         {t('button.logout')}
                     </button>
                 </div>
@@ -196,79 +189,52 @@ function AppContent() {
         }
         
         switch (activeView) {
+            case 'admin_main_dashboard': return <AdminMainDashboard onModuleSelect={handleModuleSelect} />;
+            
             // Members
-            case 'user_admin':
-                return <UserAdminDashboard userId={userId} db={dbInstance} />;
-            case 'user_profile':
-                return <UserProfile userId={userId} db={dbInstance} />;
-            case 'admin_profiles':
-                return <AdminProfileDashboard db={dbInstance} />;
-            case 'new_member_request':
-                return <NewMemberDashboard userId={userId} db={dbInstance} />;
-            case 'member_approvals':
-                return <MemberApprovalDashboard userId={userId} db={dbInstance} />;
+            case 'user_admin': return <UserAdminDashboard userId={userId} db={dbInstance} />;
+            case 'user_profile': return <UserProfile userId={userId} db={dbInstance} />;
+            case 'admin_profiles': return <AdminProfileDashboard db={dbInstance} />;
+            case 'new_member_request': return <NewMemberDashboard userId={userId} db={dbInstance} />;
+            case 'member_approvals': return <MemberApprovalDashboard userId={userId} db={dbInstance} />;
             
             // Public Affairs
-            case 'policy_data':
-                return <AdminDashboard userId={userId} db={dbInstance} />;
-            case 'activity_log': 
-                return <ActivityLogDashboard userId={userId} db={dbInstance} />;
-            case 'resumen': 
-                return <UserDashboardDisplay db={dbInstance} />;
-            case 'logros': 
-                return <DirectorDashboardDisplay db={dbInstance} />;
-            case 'objectivos':
-                return <ObjectivesDashboard db={dbInstance} />;
-            case 'stakeholder_map': 
-                return <StakeholderMapDashboard db={dbInstance} />;
-            case 'agenda_view': 
-                return <AgendaDashboard db={dbInstance} />;
-            case 'events':
-                return <EventDashboard userId={userId} db={dbInstance} role={role} />;
-
+            case 'policy_data': return <AdminDashboard userId={userId} db={dbInstance} />;
+            case 'activity_log': return <ActivityLogDashboard userId={userId} db={dbInstance} />;
+            case 'resumen': return <UserDashboardDisplay db={dbInstance} />;
+            case 'logros': return <DirectorDashboardDisplay db={dbInstance} />;
+            case 'objectivos': return <ObjectivesDashboard db={dbInstance} />;
+            case 'stakeholder_map': return <StakeholderMapDashboard db={dbInstance} />;
+            case 'agenda_view': return <AgendaDashboard db={dbInstance} />;
+            
+            // Events
+            case 'events': return <EventDashboard userId={userId} db={dbInstance} role={role} />;
+            
             // Communications
-            case 'communications_log':
-                return <CommunicationsDashboard db={dbInstance} />;
-            case 'press_log':
-                return <PressLogDashboard userId={userId} db={dbInstance} />;
-            case 'media_stakeholder_map':
-                return <MediaStakeholderMapDashboard db={dbInstance} role={role} userId={userId} />;
-            case 'bulletin_board': 
-                return <BulletinDashboard userId={userId} db={dbInstance} role={role} />;
-
+            case 'communications_log': return <CommunicationsDashboard db={dbInstance} />;
+            case 'press_log': return <PressLogDashboard userId={userId} db={dbInstance} />;
+            case 'media_stakeholder_map': return <MediaStakeholderMapDashboard db={dbInstance} role={role} userId={userId} />;
+            case 'bulletin_board': return <BulletinDashboard userId={userId} db={dbInstance} role={role} />;
+            
             // Database
-            case 'member_directory':
-                return <MemberDirectoryDashboard db={dbInstance} role={role} />;
-            case 'board_directory':
-                return <BoardDirectoryDashboard db={dbInstance} role={role} />;
-            case 'public_affairs_directory':
-                return <PublicAffairsDirectoryDashboard db={dbInstance} userId={userId} role={role} />;
-            case 'media_directory':
-                return <MediaDirectoryDashboard db={dbInstance} />;
-            case 'partners_directory':
-                return <PartnersDirectoryDashboard db={dbInstance} />;
-            case 'commissions_directory': 
-                return <CommissionDashboard db={dbInstance} userId={userId} role={role} />;
-
+            case 'member_directory': return <MemberDirectoryDashboard db={dbInstance} role={role} />;
+            case 'board_directory': return <BoardDirectoryDashboard db={dbInstance} role={role} />;
+            case 'public_affairs_directory': return <PublicAffairsDirectoryDashboard db={dbInstance} userId={userId} role={role} />;
+            case 'media_directory': return <MediaDirectoryDashboard db={dbInstance} />;
+            case 'partners_directory': return <PartnersDirectoryDashboard db={dbInstance} />;
+            case 'commissions_directory': return <CommissionDashboard db={dbInstance} userId={userId} role={role} />;
+            
             // Governance
-            case 'governance':
-                return <GovernanceDashboard db={dbInstance} userId={userId} role={role} />;
-
+            case 'governance': return <GovernanceDashboard db={dbInstance} userId={userId} role={role} />;
+            
             // Finance
-            case 'finance_dashboard':
-                return <FinanceDashboard userId={userId} db={dbInstance} role={role} />;
-            case 'finance_relations':
-                return <FinanceRelationsDashboard userId={userId} db={dbInstance} role={role} />;
-
-            // Placeholders
-            case 'sector':
-                return <SectorDashboard />;
-            case 'pilar':
-                return <PilarDashboard />;
-            case 'condicion':
-                return <CondicionDashboard />;
-            default:
-                return <p className="p-8 text-center text-gray-400">View not found.</p>;
+            case 'finance_dashboard': return <FinanceDashboard userId={userId} db={dbInstance} role={role} />;
+            case 'finance_relations': return <FinanceRelationsDashboard userId={userId} db={dbInstance} role={role} />;
+            
+            case 'sector': return <SectorDashboard />;
+            case 'pilar': return <PilarDashboard />;
+            case 'condicion': return <CondicionDashboard />;
+            default: return <p className="p-8 text-center text-gray-400">View not found.</p>;
         }
     };
 
@@ -281,24 +247,31 @@ function AppContent() {
         
         if (!isReady) {
              return (
-                <div className="flex justify-center items-center h-screen bg-sky-950/90 text-white">
-                    <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                    <p className="ml-3 text-sky-200">Initializing system components...</p>
+                <div className="flex justify-center items-center h-screen bg-white text-blue-600">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                    <p className="ml-3 text-gray-500">Initializing system components...</p>
                  </div>
             );
         }
         
-        const showSidebar = role === 'admin' || role === 'director' || role === 'user' || role ==='directorinvitee' || role === 'userinvitee';
+        // Show Sidebar only if:
+        // 1. User has a role that typically sees the sidebar
+        // 2. AND (for Admins) they have selected a specific module OR (for others) always show it
+        const showSidebar = (role === 'admin' && activeModule) || 
+                            (role === 'director' || role === 'user' || role ==='directorinvitee' || role === 'userinvitee');
+        
         const contentPadding = showSidebar ? 'pl-64' : 'px-4'; 
 
         return (
-            <div className="flex min-h-screen">
+            <div className="flex min-h-screen bg-slate-50">
                 {showSidebar && (
                     <Sidebar 
                         activeView={activeView} 
                         setActiveView={setActiveView}
                         isDashboard={true} 
-                        role={role} 
+                        role={role}
+                        currentModule={activeModule} // Pass current module to filter sidebar
+                        onGoBack={handleBackToDashboard} // Pass back handler
                     />
                 )}
                 <main className={`w-full ${contentPadding} transition-all duration-300 pt-20`}>
@@ -309,10 +282,10 @@ function AppContent() {
     };
 
     return (
-        <div className="font-sans min-h-screen bg-gradient-to-br from-sky-950 via-black to-black text-gray-200">
+        <div className="font-sans min-h-screen bg-slate-50 text-gray-900">
             <button
                 onClick={toggleLanguage}
-                className={`fixed top-4 ${authInstance?.currentUser ? 'right-40' : 'right-4'} z-50 p-2 bg-black/50 border border-sky-700/50 text-white rounded-full shadow-lg hover:bg-sky-800 transition duration-300 flex items-center text-sm backdrop-blur-md`}
+                className={`fixed top-4 ${authInstance?.currentUser ? 'right-40' : 'right-4'} z-50 p-2 bg-white border border-gray-200 text-blue-600 rounded-full shadow-md hover:bg-gray-50 transition duration-300 flex items-center text-sm`}
                 title={language === 'es' ? 'Change to English' : 'Cambiar a Español'}
             >
                 <Globe className="w-4 h-4 mr-1" />
@@ -322,7 +295,7 @@ function AppContent() {
             {authInstance?.currentUser && (
                 <button
                     onClick={handleLogout}
-                    className="fixed top-4 right-4 z-50 p-2 bg-black/50 border border-sky-700/50 text-white rounded-full shadow-lg hover:bg-sky-800 transition duration-300 flex items-center text-sm backdrop-blur-md"
+                    className="fixed top-4 right-4 z-50 p-2 bg-white border border-gray-200 text-red-500 rounded-full shadow-md hover:bg-red-50 transition duration-300 flex items-center text-sm"
                     title={t('button.logout')}
                 >
                     <LogOut className="w-4 h-4 mr-1" />
@@ -333,7 +306,6 @@ function AppContent() {
         </div>
     );
 }
-
 
 export default function App() {
     return (

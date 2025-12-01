@@ -1,6 +1,4 @@
-// src/components/forms/CommunicationsLogForm.jsx
-
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { ref, set, push, serverTimestamp } from 'firebase/database';
 import { MessageCircle, X } from 'lucide-react';
 import CardTitle from '../ui/CardTitle.jsx';
@@ -15,13 +13,12 @@ import {
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// Componente helper para Checkbox
-const CheckboxField = ({ label, name, checked, onChange }) => (
-    <label className="flex items-center space-x-2 text-gray-200 hover:text-white cursor-pointer">
+const CheckboxField = ({ label, name, checked, onChange, t }) => (
+    <label className="flex items-center space-x-2 text-slate-700 hover:text-slate-900 cursor-pointer">
         <input 
             type="checkbox"
             name={name}
-            className="rounded text-sky-500 focus:ring-sky-600 bg-sky-950/50 border-sky-700"
+            className="rounded text-blue-600 focus:ring-blue-500 border-gray-300"
             checked={checked}
             onChange={onChange}
         />
@@ -49,7 +46,6 @@ const CommunicationsLogForm = ({ userId, db, mode = 'add', initialData = null, o
         }));
     };
 
-    // Handler para los checkboxes de "Formato"
     const handleFormatChange = (formatOption) => {
         setFormData(prev => {
             const currentFormats = prev.format || [];
@@ -71,26 +67,15 @@ const CommunicationsLogForm = ({ userId, db, mode = 'add', initialData = null, o
 
         try {
             const path = getDbPaths().communicationsLog;
-            
             if (mode === 'edit' && initialData?.id) {
                 const itemRef = ref(db, `${path}/${initialData.id}`);
-                await set(itemRef, {
-                    ...formData,
-                    updatedAt: serverTimestamp(),
-                    updatedBy: userId,
-                });
+                await set(itemRef, { ...formData, updatedAt: serverTimestamp(), updatedBy: userId });
                 setMessage(t('comms_log.form.success_update'));
             } else {
                 const newItemRef = push(ref(db, path));
-                await set(newItemRef, {
-                    ...formData,
-                    id: newItemRef.key,
-                    createdAt: serverTimestamp(),
-                    createdBy: userId,
-                });
+                await set(newItemRef, { ...formData, id: newItemRef.key, createdAt: serverTimestamp(), createdBy: userId });
                 setMessage(t('comms_log.form.success_add'));
             }
-
             setTimeout(onClose, 1000); 
         } catch (error) {
             console.error(`Error ${mode} comms log document: `, error);
@@ -101,17 +86,16 @@ const CommunicationsLogForm = ({ userId, db, mode = 'add', initialData = null, o
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={formTitle} icon={MessageCircle} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <SelectField 
                         label={t('comms_log.form.activity')} 
                         name="activity" 
@@ -137,9 +121,9 @@ const CommunicationsLogForm = ({ userId, db, mode = 'add', initialData = null, o
                     required={false}
                 />
 
-                <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-2">
-                    <label className="block text-sm font-medium text-gray-200">{t('comms_log.form.format')}</label>
-                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-2">
+                    <label className="block text-sm font-medium text-slate-700">{t('comms_log.form.format')}</label>
+                    <div className="flex flex-wrap gap-x-6 gap-y-3">
                         {COMMS_LOG_FORMAT_OPTIONS.map(format => (
                             <CheckboxField
                                 key={format}
@@ -147,12 +131,13 @@ const CommunicationsLogForm = ({ userId, db, mode = 'add', initialData = null, o
                                 name={format}
                                 checked={(formData.format || []).includes(format)}
                                 onChange={() => handleFormatChange(format)}
+                                t={t}
                             />
                         ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <SelectField 
                         label={t('comms_log.form.reach')} 
                         name="reach" 
@@ -190,14 +175,14 @@ const CommunicationsLogForm = ({ userId, db, mode = 'add', initialData = null, o
                 <button
                     type="submit"
                     disabled={isLoading || !isReady}
-                    className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                        isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
+                    className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                        isLoading || !isReady ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
                     }`}
                 >
                     {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
                 </button>
                 {message && (
-                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`text-center text-sm mt-3 ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                         {message}
                     </p>
                 )}

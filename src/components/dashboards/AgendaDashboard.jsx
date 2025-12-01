@@ -1,5 +1,3 @@
-// src/components/dashboards/AgendaDashboard.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { getDbPaths } from '../../services/firebase.js';
@@ -12,9 +10,8 @@ import SimplePieChart from '../charts/SimplePieChart.jsx';
 import SimpleBarChart from '../charts/SimpleBarChart.jsx';
 import RechartsTreemap from '../charts/RechartsTreemap.jsx'; 
 
-// --- Componente ChartContainer ---
 const ChartContainer = ({ title, icon, children }) => (
-    <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden h-96 flex flex-col"> 
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden h-96 flex flex-col"> 
         <CardTitle title={title} icon={icon || BarChart2} />
         <div className="p-4 flex-1 flex items-center justify-center">
             {children}
@@ -32,47 +29,46 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// --- Component: AgendaTable (Includes Per-Column Search/Filter Placeholders) ---
 const AgendaTable = ({ items, t }) => (
-    <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-        <div className="p-4 max-h-96 overflow-y-auto no-scrollbar">
-            <table className="min-w-full divide-y divide-sky-800/50">
-                <thead className="bg-sky-900/70 sticky top-0">
-                    {/* Column Headers */}
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-0 max-h-96 overflow-y-auto no-scrollbar">
+            <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{t('agenda.name_header') || 'Name'}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{t('agenda.institution_header') || 'Institution'}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{t('agenda.sector_header') || 'Sector'}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{t('agenda.condition_header') || 'Condition'}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{t('agenda.act_type_header') || 'Act Type'}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{t('agenda.pilar_header') || 'Pilar'}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{t('agenda.scope_header') || 'Scope'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('agenda.name_header') || 'Name'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('agenda.institution_header') || 'Institution'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('agenda.sector_header') || 'Sector'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('agenda.condition_header') || 'Condition'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('agenda.act_type_header') || 'Act Type'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('agenda.pilar_header') || 'Pilar'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('agenda.scope_header') || 'Scope'}</th>
                     </tr>
                     
-                    {/* Per-Column Search/Filter Row (Placeholders) */}
-                    <tr className="bg-sky-900/50">
-                        {/* Search Input for Name */}
-                        <th className="px-2 py-1"><InputField placeholder="Search name" isCompact={true} /></th>
-                        {/* Select Fields for other columns */}
-                        <th className="px-2 py-1"><SelectField options={[{ value: '', label: 'All' }]} isCompact={true} /></th>
-                        <th className="px-2 py-1"><SelectField options={[{ value: '', label: 'All' }]} isCompact={true} /></th>
-                        <th className="px-2 py-1"><SelectField options={[{ value: '', label: 'All' }]} isCompact={true} /></th>
-                        <th className="px-2 py-1"><SelectField options={[{ value: '', label: 'All' }]} isCompact={true} /></th>
-                        <th className="px-2 py-1"><SelectField options={[{ value: '', label: 'All' }]} isCompact={true} /></th>
-                        <th className="px-2 py-1"><SelectField options={[{ value: '', label: 'All' }]} isCompact={true} /></th>
+                    <tr className="bg-white border-b border-gray-200">
+                        <th className="px-2 py-2"><InputField placeholder="Search" icon={Search} /></th>
+                        <th className="px-2 py-2"><SelectField options={[{ value: '', label: 'All' }]} /></th>
+                        <th className="px-2 py-2"><SelectField options={[{ value: '', label: 'All' }]} /></th>
+                        <th className="px-2 py-2"><SelectField options={[{ value: '', label: 'All' }]} /></th>
+                        <th className="px-2 py-2"><SelectField options={[{ value: '', label: 'All' }]} /></th>
+                        <th className="px-2 py-2"><SelectField options={[{ value: '', label: 'All' }]} /></th>
+                        <th className="px-2 py-2"><SelectField options={[{ value: '', label: 'All' }]} /></th>
                     </tr>
                 </thead>
-                <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
+                <tbody className="bg-white divide-y divide-gray-200">
                     {items.length > 0 ? (
                         items.map((item) => (
-                            <tr key={item.id} className="hover:bg-sky-900/60">
-                                <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-white">{item.nombre || 'N/A'}</td>
-                                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-300">{item.institucion || 'N/A'}</td>
-                                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-300">{item.sector || 'N/A'}</td>
-                                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-300">{item.condicion || 'N/A'}</td>
-                                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-300">{item.tipoDeActo || 'N/A'}</td>
-                                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-300">{item.pilar || 'N/A'}</td>
-                                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-300">{item.agenda || 'N/A'}</td> {/* USED item.agenda for Scope */}
+                            <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{item.nombre || 'N/A'}</td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{item.institucion || 'N/A'}</td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{item.sector || 'N/A'}</td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">
+                                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${item.condicion === 'finalizado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                        {item.condicion || 'N/A'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{item.tipoDeActo || 'N/A'}</td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{item.pilar || 'N/A'}</td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{item.agenda || 'N/A'}</td> 
                             </tr>
                         ))
                     ) : (
@@ -92,7 +88,6 @@ const AgendaDashboardDisplay = ({ db }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('sector'); 
     
-    // 1. Fetch data (unchanged)
     useEffect(() => {
         if (!db) return;
         
@@ -108,7 +103,6 @@ const AgendaDashboardDisplay = ({ db }) => {
         return () => unsubscribe();
     }, [db]);
 
-    // 2. Data Processing for all Charts (MODIFIED to use item.agenda for Scope)
     const { 
         sectorChartData, institutionChartData, 
         actTypeChartData, conditionChartData, pilarChartData, scopeChartData 
@@ -134,7 +128,6 @@ const AgendaDashboardDisplay = ({ db }) => {
             const pilarKey = safeTrim('pilar');
             if (pilarKey !== '') { counts.pilars[pilarKey] = (counts.pilars[pilarKey] || 0) + 1; }
 
-            // NEW: Scope Counts (using the 'agenda' field which contains National/International)
             const agendaScopeKey = safeTrim('agenda'); 
             if (agendaScopeKey !== '') { counts.scopes[agendaScopeKey] = (counts.scopes[agendaScopeKey] || 0) + 1; }
         });
@@ -147,7 +140,7 @@ const AgendaDashboardDisplay = ({ db }) => {
             actTypeChartData: chartDataFormatter(counts.actTypes),
             conditionChartData: chartDataFormatter(counts.conditions),
             pilarChartData: chartDataFormatter(counts.pilars),
-            scopeChartData: chartDataFormatter(counts.scopes), // Now derived from item.agenda
+            scopeChartData: chartDataFormatter(counts.scopes), 
         };
     }, [agendaItems]);
 
@@ -168,7 +161,7 @@ const AgendaDashboardDisplay = ({ db }) => {
                 return (
                     <ChartContainer title={t('agenda.institution_breakdown') || 'Institution Breakdown'} icon={Building}>
                         {institutionChartData.length > 0 ? (
-                            <SimpleBarChart data={institutionChartData} fillColor="#00C49F" />
+                            <SimpleBarChart data={institutionChartData} fillColor="#0ea5e9" />
                         ) : defaultNoData}
                     </ChartContainer>
                 );
@@ -195,7 +188,7 @@ const AgendaDashboardDisplay = ({ db }) => {
                 return (
                     <ChartContainer title={t('agenda.pilar_distribution') || 'Pilar Distribution'} icon={Layers}>
                         {pilarChartData.length > 0 ? (
-                            <SimpleBarChart data={pilarChartData} fillColor="#FFBB28" />
+                            <SimpleBarChart data={pilarChartData} fillColor="#f59e0b" />
                         ) : defaultNoData}
                     </ChartContainer>
                 );
@@ -218,8 +211,8 @@ const AgendaDashboardDisplay = ({ db }) => {
         <button
             className={`px-4 py-2 flex items-center space-x-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
                 activeTab === tabId 
-                ? 'bg-black/40 text-sky-400 border-b-2 border-sky-400' 
-                : 'bg-transparent text-gray-400 hover:text-white hover:bg-sky-900/30'
+                ? 'bg-white text-sky-600 border-b-2 border-sky-600' 
+                : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
             }`}
             onClick={() => setActiveTab(tabId)}
         >
@@ -232,8 +225,8 @@ const AgendaDashboardDisplay = ({ db }) => {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center p-8">
-                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                <p className="ml-3 text-sky-200">{t('director.loading')}</p>
+                <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
+                <p className="ml-3 text-gray-500">{t('director.loading')}</p>
             </div>
         );
     }
@@ -241,23 +234,21 @@ const AgendaDashboardDisplay = ({ db }) => {
     return (
         <div className="p-4 sm:p-6 lg:p-8">
             <header className="flex items-center mb-6">
-                <h1 className="text-3xl font-bold text-white flex items-center">
-                    <Target className="w-8 h-8 mr-3 text-sky-400" />
+                <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                    <Target className="w-8 h-8 mr-3 text-sky-600" />
                     {t('agenda.title') || 'Agenda Dashboard'}
                 </h1>
             </header>
 
-            {/* 1. Full Agenda Table (With Filter/Search UI RESTORED) */}
-            <h2 className="text-xl font-semibold text-white mb-4">{t('agenda.full_list') || 'Agenda Full List'}</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('agenda.full_list') || 'Agenda Full List'}</h2>
             
             <div className="mb-8">
                 <AgendaTable items={agendaItems} t={t} />
             </div>
 
-            {/* 2. Charts Accessible via Tabs */}
-            <h2 className="text-xl font-semibold text-white mb-4">{t('agenda.analytics') || 'Agenda Analytics'}</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('agenda.analytics') || 'Agenda Analytics'}</h2>
             
-            <div className="flex flex-wrap gap-x-1 border-b border-sky-700/50 mb-6">
+            <div className="flex flex-wrap gap-x-1 border-b border-gray-200 mb-6 overflow-x-auto">
                 <TabButton 
                     tabId="sector" 
                     label={t('agenda.sector') || 'Sector'}

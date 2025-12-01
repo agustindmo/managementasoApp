@@ -1,5 +1,3 @@
-// src/components/forms/EventForm.jsx
-
 import React, { useState } from 'react';
 import { ref, set, push, serverTimestamp } from 'firebase/database';
 import { Calendar, X, Loader2, Plus, Trash2 } from 'lucide-react';
@@ -15,7 +13,6 @@ import {
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// ... (TagInput y ParticipantInput helpers sin cambios) ...
 const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
     const [value, setValue] = useState('');
     const handleAdd = (e) => {
@@ -27,7 +24,7 @@ const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
     };
     return (
         <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-200">{t(labelKey)}</label>
+            <label className="block text-sm font-medium text-slate-700">{t(labelKey)}</label>
             <div className="flex space-x-2">
                 <InputField 
                     label=""
@@ -40,19 +37,19 @@ const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
                 <button
                     type="button"
                     onClick={handleAdd}
-                    className="flex-shrink-0 flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition duration-300 shadow-md h-10 mt-1"
+                    className="flex-shrink-0 flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition duration-300 shadow-sm h-10 mt-1"
                 >
                     <Plus className="w-4 h-4" />
                 </button>
             </div>
             <div className="flex flex-wrap gap-2 min-h-[20px]">
                 {items.map((item, index) => (
-                    <span key={index} className="flex items-center bg-sky-700 text-white text-sm font-medium px-2 py-0.5 rounded-full">
+                    <span key={index} className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-2 py-0.5 rounded-full">
                         {item}
                         <button
                             type="button"
                             onClick={() => onRemoveItem(index)}
-                            className="ml-1.5 text-sky-200 hover:text-white"
+                            className="ml-1.5 text-blue-600 hover:text-blue-900"
                         >
                             <X className="w-3 h-3" />
                         </button>
@@ -62,6 +59,7 @@ const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
         </div>
     );
 };
+
 const ParticipantInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
     const [name, setName] = useState('');
     const [role, setRole] = useState(EVENT_PARTICIPANT_ROLES[0]);
@@ -74,8 +72,8 @@ const ParticipantInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
         }
     };
     return (
-        <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-3">
-            <label className="block text-sm font-medium text-gray-200">{t(labelKey)}</label>
+        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-3">
+            <label className="block text-sm font-medium text-slate-700">{t(labelKey)}</label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                 <InputField 
                     label={t('event.form.participant_name')}
@@ -94,21 +92,21 @@ const ParticipantInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
                 <button
                     type="button"
                     onClick={handleAdd}
-                    className="flex-shrink-0 flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition duration-300 shadow-md h-10"
+                    className="flex-shrink-0 flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition duration-300 shadow-sm h-10"
                 >
                     <Plus className="w-4 h-4 mr-1" /> {t('event.form.add_participant')}
                 </button>
             </div>
             <div className="max-h-40 overflow-y-auto space-y-1 pt-2">
                 {items.map((p) => (
-                    <li key={p.id} className="flex justify-between items-start bg-sky-950/50 p-2 rounded-md hover:bg-sky-900/60">
+                    <li key={p.id} className="flex justify-between items-start bg-white p-2 rounded-md border border-slate-200 shadow-sm">
                         <div className="flex-1">
-                            <p className="text-sm font-medium text-white">{p.name} <span className="text-xs text-sky-300">({p.role})</span></p>
+                            <p className="text-sm font-medium text-slate-800">{p.name} <span className="text-xs text-blue-500">({p.role})</span></p>
                         </div>
                         <button
                             type="button"
                             onClick={() => onRemoveItem(p.id)}
-                            className="text-red-400 hover:text-red-300 p-1 ml-2"
+                            className="text-red-500 hover:text-red-700 p-1 ml-2"
                         >
                             <Trash2 className="w-3 h-3" />
                         </button>
@@ -118,10 +116,7 @@ const ParticipantInput = ({ labelKey, items, onAddItem, onRemoveItem, t }) => {
         </div>
     );
 };
-// ... (fin de helpers) ...
 
-
-// --- Componente Principal del Formulario ---
 const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role }) => {
     const { t } = useTranslation();
     const isAdmin = role === 'admin';
@@ -140,13 +135,9 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev, 
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // --- Handlers para Tópicos ---
     const addTopic = (topic) => {
         setFormData(prev => ({ ...prev, topics: [...(prev.topics || []), topic] }));
     };
@@ -154,7 +145,6 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
         setFormData(prev => ({ ...prev, topics: (prev.topics || []).filter((_, i) => i !== index) }));
     };
 
-    // --- Handlers para Participantes ---
     const addParticipant = (participant) => {
         setFormData(prev => ({ ...prev, participants: [...(prev.participants || []), participant] }));
     };
@@ -172,7 +162,6 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
 
         try {
             const path = getDbPaths()[dbPathKey];
-            
             const cleanData = {
                 ...formData,
                 participants: (formData.participants || []).map(({ id, ...rest }) => rest),
@@ -207,10 +196,10 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={formTitle} icon={Calendar} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
@@ -282,9 +271,7 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
                     />
                 </div>
                 
-                {/* --- UPDATED FIELD BLOCK --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* call_link is kept and is optional (no required prop) */}
                     <InputField 
                         label={t('governance.meeting.col.call_link')} 
                         name="call_link" 
@@ -292,9 +279,7 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
                         value={String(formData.call_link ?? '')} 
                         onChange={handleChange} 
                         disabled={!isAdmin}
-                        // Removed required={true} if it existed; it's optional now.
                     />
-                    {/* minute_link InputField is REMOVED */}
                 </div>
                 
                 <TagInput
@@ -317,15 +302,15 @@ const EventForm = ({ userId, db, mode = 'add', initialData = null, onClose, role
                     <button
                         type="submit"
                         disabled={isLoading || !isReady}
-                        className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                            isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
+                        className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                            isLoading || !isReady ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
                         }`}
                     >
                         {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
                     </button>
                 )}
                 {message && (
-                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`text-center text-sm mt-3 ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                         {message}
                     </p>
                 )}

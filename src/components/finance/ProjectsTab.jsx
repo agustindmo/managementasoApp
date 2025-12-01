@@ -1,14 +1,29 @@
-// src/components/finance/ProjectsTab.jsx
+import React, { useState } from 'react';
+import FinanceProjectTable from '../tables/FinanceProjectTable.jsx';
+import FinanceProjectForm from '../forms/FinanceProjectForm.jsx';
 
-import React from 'react';
-import FinanceProjectDashboard from '../dashboards/FinanceProjectDashboard.jsx';
+const ProjectsTab = ({ db, userId, role }) => {
+    const [view, setView] = useState('table');
+    const [activeRecord, setActiveRecord] = useState(null);
 
-const ProjectsTab = ({ db, userId }) => {
+    const handleOpenForm = (record = null) => {
+        setActiveRecord(record);
+        setView('form');
+    };
+
+    const handleCloseForm = () => {
+        setView('table');
+        setActiveRecord(null);
+    };
+
     return (
-        <FinanceProjectDashboard 
-            db={db}
-            userId={userId}
-        />
+        <div className="w-full">
+            {view === 'table' ? (
+                <FinanceProjectTable db={db} onOpenForm={handleOpenForm} role={role} />
+            ) : (
+                <FinanceProjectForm userId={userId} db={db} initialData={activeRecord} onClose={handleCloseForm} mode={activeRecord ? 'edit' : 'add'} role={role} />
+            )}
+        </div>
     );
 };
 export default ProjectsTab;

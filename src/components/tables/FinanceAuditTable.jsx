@@ -1,177 +1,81 @@
-// src/components/tables/FinanceAuditTable.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, remove } from 'firebase/database';
-import { Loader2, FileText, ArrowUp, ArrowDown, Download, PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Loader2, FileText, ArrowUp, ArrowDown, Download, PlusCircle, Edit, Trash2, Link } from 'lucide-react';
 import { getDbPaths } from '../../services/firebase.js';
-import CardTitle from '../ui/CardTitle.jsx';
-import { 
-    ALL_FILTER_OPTION,
-    AUDIT_TABLE_COLUMNS,
-    AUDIT_COLUMN_OPTIONS_MAP
-} from '../../utils/constants.js';
+import { ALL_FILTER_OPTION, AUDIT_TABLE_COLUMNS } from '../../utils/constants.js';
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
-import * as XLSX from 'xlsx'; 
 
-const snapshotToArray = (snapshot) => {
-    if (!snapshot.exists()) return [];
-    const val = snapshot.val();
-    return Object.keys(val).map(key => ({
-        id: key,
-        ...val[key],
-    }));
-};
+const snapshotToArray = (snapshot) => { if (!snapshot.exists()) return []; const val = snapshot.val(); return Object.keys(val).map(key => ({ id: key, ...val[key] })); };
 
-// --- Fila de la Tabla ---
-const AuditTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => { // <-- isAdmin prop
-    return (
-        <tr className="hover:bg-sky-900/60 transition-colors">
-            <td className="px-6 py-3 text-sm text-gray-400 whitespace-nowrap">{item.startDate} / {item.endDate}</td>
-            <td className="px-6 py-3 text-sm font-medium text-white truncate max-w-[150px]" title={item.auditor}>{item.auditor}</td>
-            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={item.goals}>{item.goals}</td>
-            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={item.results}>{item.results}</td>
-            <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={item.observations}>{item.observations}</td>
-            <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
-                {isAdmin && (
-                    <div className="flex space-x-2 justify-end">
-                        <button
-                            onClick={onEdit}
-                            className="text-sky-400 hover:text-sky-200 p-1 rounded-full hover:bg-sky-800/50 transition"
-                            title={t('activity.form.edit_title')}
-                        >
-                            <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={onDelete}
-                            className="text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
-                            title={t('admin.reject')}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
-            </td>
-        </tr>
-    );
-};
-
-// --- Cabecera de la Tabla ---
-const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, filterOptions, currentFilters, t }) => {
+const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, currentFilters, t }) => {
     const label = t(column.labelKey); 
-
-    if (column.key === 'actions') {
-        return <th key={column.key} className="px-6 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider">{label}</th>;
-    }
-    
+    if (column.key === 'actions') return <th key={column.key} className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50">{label}</th>;
     const isSorted = currentSort.key === column.key;
     const sortIcon = isSorted ? (currentSort.direction === 'asc' ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />) : null;
     
-    let options = [];
-    if (column.filterable && column.optionsKey) {
-         options = filterOptions[column.optionsKey] || [];
-    }
-    
-    const isTextInputFilter = !column.optionsKey;
-
     return (
-        <th 
-            key={column.key} 
-            className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider whitespace-nowrap"
-        >
-            <div className="flex flex-col space-y-1">
-                <div className="flex items-center">
-                    <span 
-                        className={`cursor-pointer font-medium ${column.sortable ? 'hover:text-white transition-colors' : ''}`}
-                        onClick={() => column.sortable && onSortChange(column.key)}
-                    >
-                        {label}
-                    </span>
-                    {sortIcon}
+        <th key={column.key} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider whitespace-nowrap bg-slate-50">
+            <div className="flex flex-col space-y-2">
+                <div className="flex items-center cursor-pointer hover:text-slate-700" onClick={() => column.sortable && onSortChange(column.key)}>
+                    <span className="font-bold">{label}</span> {sortIcon}
                 </div>
-                
                 {column.filterable && (
-                    isTextInputFilter ? (
-                         <input
-                            type="text"
-                            placeholder={`${t('policy.search')} ${label}`}
-                            value={currentFilters[column.key] || ''}
-                            onChange={(e) => onFilterChange(column.key, e.target.value)}
-                            className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[100px]"
-                        />
-                    ) : (
-                        <select
-                            value={currentFilters[column.key] || ALL_FILTER_OPTION}
-                            onChange={(e) => onFilterChange(column.key, e.target.value)}
-                            className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[100px]"
-                        >
-                            <option value={ALL_FILTER_OPTION} className="bg-sky-900">{ALL_FILTER_OPTION}</option>
-                            {options.map(option => (
-                                <option key={option} value={option} className="bg-sky-900">{option}</option>
-                            ))}
-                        </select>
-                    )
+                     <input type='text' placeholder={`${t('policy.search')} ${label}`} value={currentFilters[column.key] || ''} onChange={(e) => onFilterChange(column.key, e.target.value)} className="text-xs p-1 border border-slate-300 rounded focus:ring-blue-500 focus:border-blue-500 min-w-[100px] bg-white text-slate-800" />
                 )}
             </div>
         </th>
     );
 };
 
+const AuditTableRow = ({ item, onEdit, onDelete, isAdmin }) => (
+    <tr className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
+        <td className="px-6 py-3 text-sm font-medium text-slate-900">{item.name}</td>
+        <td className="px-6 py-3 text-sm text-slate-600">{item.date}</td>
+        <td className="px-6 py-3 text-sm text-slate-600">
+             {item.link ? <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex items-center"><Link className="w-4 h-4 mr-1" /> Link</a> : 'N/A'}
+        </td>
+        <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+            {isAdmin && (
+                <div className="flex space-x-2 justify-end">
+                    <button onClick={onEdit} className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition"><Edit className="w-4 h-4" /></button>
+                    <button onClick={onDelete} className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition"><Trash2 className="w-4 h-4" /></button>
+                </div>
+            )}
+        </td>
+    </tr>
+);
 
-// --- Componente Principal de la Tabla ---
-const FinanceAuditTable = ({ db, onOpenForm, role }) => { // <-- role prop
+const FinanceAuditTable = ({ db, onOpenForm, role }) => { 
     const { t } = useTranslation(); 
-    const isAdmin = role === 'admin'; // <-- Check role
-    
-    const dbPathKey = 'financeAudits';
-    const filterOptionsMap = AUDIT_COLUMN_OPTIONS_MAP;
-    const titleKey = 'finance.tab.audits';
-    const addKey = 'finance.audits.form_add';
-
+    const isAdmin = role === 'admin';
     const [dataItems, setDataItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({});
-    const [sort, setSort] = useState({ key: 'startDate', direction: 'desc' }); 
+    const [sort, setSort] = useState({ key: 'date', direction: 'desc' });
 
-    // 1. Data Fetching
     useEffect(() => {
         if (!db) return;
         setIsLoading(true); 
-
-        const dataRef = ref(db, getDbPaths()[dbPathKey]); 
-        
+        const dataRef = ref(db, getDbPaths().financeAudits); 
         const unsubscribe = onValue(dataRef, (snapshot) => {
-            try {
-                setDataItems(snapshotToArray(snapshot));
-            } catch (e) { console.error("Error processing Audit Log snapshot:", e); }
+            try { setDataItems(snapshotToArray(snapshot)); } 
+            catch (e) { console.error("Error processing Audit snapshot:", e); } 
             finally { setIsLoading(false); }
-        }, (error) => { console.error("Audit Log Subscription Error:", error); setIsLoading(false); });
-        
+        });
         return () => unsubscribe();
-    }, [db, dbPathKey]);
+    }, [db]);
 
-
-    // 2. Data Filtering and Sorting Logic
     const filteredAndSortedItems = useMemo(() => {
         let finalData = dataItems.filter(item => {
             for (const column of AUDIT_TABLE_COLUMNS) {
                 const key = column.key;
                 const filterValue = filters[key];
-                
                 if (!filterValue || filterValue === ALL_FILTER_OPTION) continue;
-
                 let itemValue = item[key] || '';
-                
-                if (key === 'startDate') { // Special case for date range
-                     itemValue = `${item.startDate || ''} ${item.endDate || ''}`;
-                }
-                
-                itemValue = String(itemValue);
-
-                if (!itemValue.toLowerCase().includes(String(filterValue).toLowerCase())) return false;
+                if (!String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase())) return false;
             }
             return true;
         });
-
         if (sort.key) {
             finalData.sort((a, b) => {
                 const aValue = a[sort.key] || '';
@@ -179,145 +83,42 @@ const FinanceAuditTable = ({ db, onOpenForm, role }) => { // <-- role prop
                 return (sort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
             });
         }
-        
         return finalData;
     }, [dataItems, filters, sort]);
 
-    // Handler para eliminar
     const handleDelete = async (id) => {
-        if (db && isAdmin && window.confirm(t('policy.confirm_delete'))) { // <-- Check admin
-            try {
-                const itemRef = ref(db, `${getDbPaths()[dbPathKey]}/${id}`);
-                await remove(itemRef); 
-            } catch (e) { console.error("Error deleting audit document:", e); }
+        if (db && isAdmin && window.confirm(t('policy.confirm_delete'))) { 
+            try { await remove(ref(db, `${getDbPaths().financeAudits}/${id}`)); } catch (e) { console.error("Error deleting audit:", e); }
         }
     };
 
-    const handleSortChange = (key) => {
-        setSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
-    };
+    const handleSortChange = (key) => setSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
+    const handleFilterChange = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
 
-    const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-    };
-
-    // Función de descarga XLSX
-    const handleDownloadXLSX = () => {
-        const data = filteredAndSortedItems;
-        const columns = AUDIT_TABLE_COLUMNS;
-        const filename = 'Audits.xlsx';
-
-        if (data.length === 0) {
-            alert(t('policy.no_records'));
-            return;
-        }
-
-        const exportData = data.map(item => {
-            let row = {};
-            columns.filter(col => col.key !== 'actions').forEach(col => {
-                const header = t(col.labelKey);
-                let value;
-                if (col.key === 'startDate') {
-                    value = `${item.startDate || 'N/A'} - ${item.endDate || 'N/A'}`;
-                } else {
-                    value = item[col.key] || '';
-                }
-                row[header] = value;
-            });
-            return row;
-        });
-
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Data');
-        XLSX.writeFile(wb, filename);
-    };
-
-    // 3. Render Logic
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center h-48">
-                <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
-                <p className="ml-3 text-sky-200">{t('press_log.loading_records')}</p>
-            </div>
-        );
-    }
+    if (isLoading) return <div className="flex justify-center items-center h-48"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /><p className="ml-3 text-slate-500">{t('finance.audits.loading')}</p></div>;
     
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-            <div className="flex items-center justify-between p-4 bg-sky-900/70 rounded-t-xl border-b border-sky-700/50">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between p-4 bg-white border-b border-slate-200">
                 <div className="flex items-center space-x-3">
-                    <FileText className="w-5 h-5 text-sky-300" />
-                    <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
-                        {`${t(titleKey)} (${filteredAndSortedItems.length})`}
-                    </h2>
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">{`${t('finance.tab.audits')} (${filteredAndSortedItems.length})`}</h2>
                 </div>
                 <div className="flex space-x-2">
-                    {/* --- MODIFICADO: Botón de descarga y Añadir ahora son condicionales --- */}
-                    {isAdmin && (
-                        <>
-                            <button
-                                onClick={handleDownloadXLSX}
-                                className="flex items-center space-x-2 bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-600 transition shadow-md"
-                                title={t('policy.download_xlsx')} 
-                            >
-                                <Download className="w-4 h-4" />
-                                <span>{t('policy.download_xlsx')}</span> 
-                            </button>
-                            <button
-                                onClick={() => onOpenForm(null)}
-                                className="flex items-center space-x-2 bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition shadow-md"
-                                title={t(addKey)}
-                            >
-                                <PlusCircle className="w-4 h-4" />
-                                <span>{t(addKey)}</span>
-                            </button>
-                        </>
-                    )}
+                    {isAdmin && <button onClick={() => onOpenForm(null)} className="flex items-center space-x-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition shadow-md"><PlusCircle className="w-4 h-4" /><span>{t('finance.audits.add')}</span></button>}
                 </div>
             </div>
-            
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-sky-800/50">
-                    <thead className="bg-sky-900/70">
-                        <tr>
-                            {AUDIT_TABLE_COLUMNS.map(column => (
-                                // --- MODIFICADO: Ocultar la columna de acciones si no es admin ---
-                                (isAdmin || column.key !== 'actions') && (
-                                    <TableHeaderWithControls
-                                        key={column.key}
-                                        column={column}
-                                        currentSort={sort}
-                                        onSortChange={handleSortChange}
-                                        onFilterChange={handleFilterChange}
-                                        filterOptions={filterOptionsMap}
-                                        currentFilters={filters}
-                                        t={t} 
-                                    />
-                                )
-                            ))}
-                        </tr>
+                <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                        <tr>{AUDIT_TABLE_COLUMNS.map(column => (<TableHeaderWithControls key={column.key} column={column} currentSort={sort} onSortChange={handleSortChange} onFilterChange={handleFilterChange} currentFilters={filters} t={t} />))}</tr>
                     </thead>
-                    <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
-                        {filteredAndSortedItems.length > 0 ? (
-                            filteredAndSortedItems.map(item => (
-                                <AuditTableRow
-                                    key={item.id}
-                                    item={item}
-                                    onEdit={() => onOpenForm(item)} 
-                                    onDelete={() => handleDelete(item.id)} 
-                                    t={t}
-                                    isAdmin={isAdmin} // <-- Pass prop
-                                />
-                            ))
-                        ) : (
-                            <tr><td colSpan={isAdmin ? AUDIT_TABLE_COLUMNS.length : AUDIT_TABLE_COLUMNS.length - 1} className="px-6 py-4 text-center text-gray-500">{t('press_log.no_records')}</td></tr>
-                        )}
+                    <tbody className="bg-white divide-y divide-slate-200">
+                        {filteredAndSortedItems.length > 0 ? filteredAndSortedItems.map(item => <AuditTableRow key={item.id} item={item} onEdit={() => onOpenForm(item)} onDelete={() => handleDelete(item.id)} isAdmin={isAdmin} />) : <tr><td colSpan={AUDIT_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-slate-500">{t('press_log.no_records')}</td></tr>}
                     </tbody>
                 </table>
             </div>
         </div>
     );
 };
-
 export default FinanceAuditTable;

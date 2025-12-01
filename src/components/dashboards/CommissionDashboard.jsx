@@ -1,300 +1,101 @@
-// src/components/dashboards/CommissionDashboard.jsx
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ref, onValue, remove } from 'firebase/database';
-import { Loader2, Users, ArrowUp, ArrowDown, PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Users2, Loader2, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { getDbPaths } from '../../services/firebase.js';
-import CardTitle from '../ui/CardTitle.jsx';
-import { 
-    ALL_FILTER_OPTION,
-    COMMISSION_TABLE_COLUMNS,
-} from '../../utils/constants.js';
-import { useTranslation } from '../../context/TranslationContext.jsx'; 
+import { useTranslation } from '../../context/TranslationContext.jsx';
 import CommissionForm from '../forms/CommissionForm.jsx';
 
-const snapshotToArray = (snapshot) => {
-    if (!snapshot.exists()) return [];
-    const val = snapshot.val();
-    return Object.keys(val).map(key => ({
-        id: key,
-        ...val[key],
-    }));
-};
-
-// --- TASK 6: Removed snapshotToUserMap ---
-
-// --- Cabecera de la Tabla ---
-const TableHeaderWithControls = ({ column, currentSort, onSortChange, onFilterChange, currentFilters, t, isAdmin }) => {
-    const label = t(column.labelKey); 
-
-    if (column.key === 'actions' && !isAdmin) {
-        return null; // Ocultar columna de acciones si no es admin
-    }
-    
-    const isSorted = currentSort.key === column.key;
-    const sortIcon = isSorted ? (currentSort.direction === 'asc' ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />) : null;
-    
-    return (
-        <th 
-            key={column.key} 
-            className="px-4 py-3 text-left text-xs font-medium text-sky-200 uppercase tracking-wider whitespace-nowrap"
-        >
-            <div className="flex flex-col space-y-1">
-                <div className="flex items-center">
-                    <span 
-                        className={`cursor-pointer font-medium ${column.sortable ? 'hover:text-white transition-colors' : ''}`}
-                        onClick={() => column.sortable && onSortChange(column.key)}
-                    >
-                        {label}
-                    </span>
-                    {sortIcon}
-                </div>
-                
-                {column.filterable && (
-                     <input
-                        type="text"
-                        placeholder={`${t('policy.search')} ${label}`}
-                        value={currentFilters[column.key] || ''}
-                        onChange={(e) => onFilterChange(column.key, e.target.value)}
-                        className="text-xs p-1 border border-sky-700 bg-sky-950/50 text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 min-w-[100px]"
-                    />
-                )}
-            </div>
-        </th>
-    );
-};
-
-// --- Fila de la Tabla ---
-// --- TASK 6: Removed userMap prop ---
-const CommissionTableRow = ({ item, onEdit, onDelete, t, isAdmin }) => {
-    
-    // --- TASK 6: Read names directly from the 'members' array of objects ---
-    const memberNames = (item.members || [])
-        .map(member => member.name || 'N/A')
-        .join(', ');
-    
-    return (
-        <tr className="hover:bg-sky-900/60 transition-colors">
-            <td className="px-6 py-2 text-sm font-medium text-white truncate max-w-[200px]" title={item.name}>{item.name}</td>
-            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[300px]" title={item.scope}>{item.scope}</td>
-            <td className="px-6 py-2 text-sm text-gray-400 truncate max-w-[300px]" title={memberNames}>{memberNames || 'N/A'}</td>
-            {isAdmin && (
-                <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex space-x-2 justify-end">
-                        <button
-                            onClick={onEdit}
-                            className="text-sky-400 hover:text-sky-200 p-1 rounded-full hover:bg-sky-800/50 transition"
-                            title={t('activity.form.edit_title')}
-                        >
-                            <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={onDelete}
-                            className="text-red-400 hover:text-red-200 p-1 rounded-full hover:bg-red-800/50 transition"
-                            title={t('admin.reject')}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </div>
-                </td>
-            )}
-        </tr>
-    );
-};
-
-
-// --- Componente Principal del Dashboard ---
 const CommissionDashboard = ({ db, userId, role }) => {
     const { t } = useTranslation();
-    const [dataItems, setDataItems] = useState([]);
-    // --- TASK 6: Removed userMap state ---
-    const [isLoading, setIsLoading] = useState(true);
-    const [filters, setFilters] = useState({});
-    const [sort, setSort] = useState({ key: 'name', direction: 'asc' });
-    const [view, setView] = useState('table');
+    const isAdmin = role === 'admin';
+    const [commissions, setCommissions] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showForm, setShowForm] = useState(false);
     const [activeRecord, setActiveRecord] = useState(null);
 
-    const isAdmin = role === 'admin';
-    const dbPathKey = 'commissions';
-    
-    // 1. Data Fetching
     useEffect(() => {
         if (!db) return;
-        
-        // --- TASK 6: Simplified fetch, removed user/profile loading ---
-        const dataRef = ref(db, getDbPaths()[dbPathKey]);
-        const unsubData = onValue(dataRef, (snapshot) => {
-            setDataItems(snapshotToArray(snapshot));
-            setIsLoading(false);
-        }, (err) => { 
-            console.error("Commissions subscription error:", err); 
-            setIsLoading(false); 
+        const refPath = ref(db, getDbPaths().commissions);
+        const unsubscribe = onValue(refPath, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                setCommissions(Object.keys(data).map(key => ({ id: key, ...data[key] })));
+            } else {
+                setCommissions([]);
+            }
+            setLoading(false);
         });
-
-        return () => {
-            unsubData();
-        };
+        return () => unsubscribe();
     }, [db]);
 
-    // 2. Lógica de filtro y orden
-    const filteredAndSortedItems = useMemo(() => {
-        let finalData = dataItems;
-        
-        finalData = finalData.filter(item => {
-            // --- TASK 6: Get member names from the new structure ---
-            const memberNames = (item.members || []).map(m => m.name || '').join(', ');
-            
-            for (const key in filters) {
-                const filterValue = filters[key]?.toLowerCase();
-                if (!filterValue) continue;
-
-                let itemValue;
-                // --- TASK 6: Filter on 'members' key ---
-                if (key === 'members') {
-                    itemValue = memberNames;
-                } else {
-                    itemValue = String(item[key] || '');
-                }
-                
-                if (!itemValue.toLowerCase().includes(filterValue)) return false;
-            }
-            return true;
-        });
-
-        if (sort.key) {
-            finalData.sort((a, b) => {
-                // --- TASK 6: Handle sorting by 'members' key ---
-                let aValue = a[sort.key];
-                let bValue = b[sort.key];
-
-                if (sort.key === 'members') {
-                    aValue = (a.members || []).map(m => m.name).join(', ');
-                    bValue = (b.members || []).map(m => m.name).join(', ');
-                } else {
-                    aValue = aValue || '';
-                    bValue = bValue || '';
-                }
-
-                return (sort.direction === 'asc' ? 1 : -1) * String(aValue).localeCompare(String(bValue));
-            });
-        }
-        return finalData;
-    }, [dataItems, filters, sort]); // --- TASK 6: Removed userMap dependency ---
-
-    // Handlers
-    const handleSortChange = (key) => {
-        setSort(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }));
-    };
-    const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-    };
     const handleOpenForm = (record = null) => {
         if (!isAdmin) return;
         setActiveRecord(record);
-        setView('form');
-    };
-    const handleCloseForm = () => {
-        setActiveRecord(null);
-        setView('table');
-    };
-    const handleDelete = async (id) => {
-        if (db && isAdmin && window.confirm(t('policy.confirm_delete'))) { 
-            try {
-                const itemRef = ref(db, `${getDbPaths()[dbPathKey]}/${id}`);
-                await remove(itemRef); 
-            } catch (e) { console.error("Error deleting commission:", e); }
-        }
+        setShowForm(true);
     };
 
-    // 3. Render Logic
-    if (isLoading) {
+    const handleDelete = async (id) => {
+        if (!isAdmin || !confirm(t('stakeholder.confirm_delete'))) return;
+        try { await remove(ref(db, `${getDbPaths().commissions}/${id}`)); }
+        catch (e) { console.error(e); }
+    };
+
+    if (loading) return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>;
+
+    if (showForm) {
         return (
-            <div className="flex justify-center items-center p-8">
-                <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-                <p className="ml-3 text-sky-200">{t('profile.loading_admin')}</p>
-            </div>
-        );
-    }
-    
-    if (view === 'form') {
-        return (
-             <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
                 <CommissionForm
                     userId={userId}
                     db={db}
-                    initialData={activeRecord}
-                    onClose={handleCloseForm}
                     mode={activeRecord ? 'edit' : 'add'}
+                    initialData={activeRecord}
+                    onClose={() => { setShowForm(false); setActiveRecord(null); }}
                     role={role}
                 />
             </div>
         );
     }
-    
+
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <h1 className="text-3xl font-bold text-white mb-6 flex items-center">
-                <Users className="w-8 h-8 mr-3 text-sky-400" />
-                {t('sidebar.commissions_directory')}
-            </h1>
-            
-            <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden">
-                <div className="flex items-center justify-between p-4 bg-sky-900/70 rounded-t-xl border-b border-sky-700/50">
-                    <div className="flex items-center space-x-3">
-                        <Users className="w-5 h-5 text-sky-300" />
-                        <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
-                            {`${t('sidebar.commissions_directory')} (${filteredAndSortedItems.length})`}
-                        </h2>
-                    </div>
-                    {isAdmin && (
-                        <button
-                            onClick={() => handleOpenForm(null)}
-                            className="flex items-center space-x-2 bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-sky-700 transition shadow-md"
-                        >
-                            <PlusCircle className="w-4 h-4" />
-                            <span>{t('commission.form.add_title')}</span>
-                        </button>
-                    )}
-                </div>
-                
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-sky-800/50">
-                        <thead className="bg-sky-900/70">
-                            <tr>
-                                {COMMISSION_TABLE_COLUMNS.map(column => (
-                                    <TableHeaderWithControls
-                                        key={column.key}
-                                        column={column}
-                                        currentSort={sort}
-                                        onSortChange={handleSortChange}
-                                        onFilterChange={handleFilterChange}
-                                        filterOptions={{}}
-                                        currentFilters={filters}
-                                        t={t}
-                                        isAdmin={isAdmin}
-                                    />
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-3xl font-bold text-slate-800 flex items-center">
+                    <Users2 className="w-8 h-8 mr-3 text-blue-600" />
+                    {t('sidebar.commissions_directory')}
+                </h1>
+                {isAdmin && (
+                    <button onClick={() => handleOpenForm(null)} className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition shadow-md">
+                        <PlusCircle className="w-5 h-5" />
+                        <span>{t('commission.form.add_title')}</span>
+                    </button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {commissions.map((item) => (
+                    <div key={item.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative group hover:shadow-md transition-all">
+                        {isAdmin && (
+                            <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleOpenForm(item)} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit className="w-4 h-4" /></button>
+                                <button onClick={() => handleDelete(item.id)} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                        )}
+                        <h3 className="font-bold text-slate-800 text-xl mb-2">{item.name}</h3>
+                        <p className="text-sm text-slate-600 mb-4 italic">{item.scope}</p>
+                        
+                        <div className="border-t border-slate-100 pt-4">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">{t('commission.form.member_list')} ({(item.members || []).length})</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {(item.members || []).map((member, idx) => (
+                                    <div key={idx} className="flex items-center bg-blue-50 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full border border-blue-100">
+                                        {member.name}
+                                    </div>
                                 ))}
-                            </tr>
-                        </thead>
-                        <tbody className="bg-sky-950/50 divide-y divide-sky-800/50">
-                            {filteredAndSortedItems.length > 0 ? (
-                                filteredAndSortedItems.map(item => (
-                                    <CommissionTableRow
-                                        key={item.id}
-                                        item={item}
-                                        onEdit={() => handleOpenForm(item)} 
-                                        onDelete={() => handleDelete(item.id)} 
-                                        t={t}
-                                        isAdmin={isAdmin}
-                                        // --- TASK 6: Removed userMap prop ---
-                                    />
-                                ))
-                            ) : (
-                                <tr><td colSpan={COMMISSION_TABLE_COLUMNS.length} className="px-6 py-4 text-center text-gray-500">{t('stakeholder.no_stakeholders_found')}</td></tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

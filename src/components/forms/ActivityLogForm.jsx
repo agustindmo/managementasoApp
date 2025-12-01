@@ -1,8 +1,6 @@
-// src/components/forms/ActivityLogForm.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, set, push, serverTimestamp, onValue } from 'firebase/database';
-import { Clock, X, Plus, Trash2, Search } from 'lucide-react'; // Import icons
+import { Clock, X, Plus, Trash2, Search } from 'lucide-react'; 
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import SelectField from '../ui/SelectField.jsx';
@@ -23,7 +21,6 @@ const snapshotToArray = (snapshot) => {
     }));
 };
 
-// --- Helper Component for Multi-Select ---
 const MultiSelectSearch = ({ labelKey, selectedItems, allOptions, onAddItem, onRemoveItem, t }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -36,10 +33,9 @@ const MultiSelectSearch = ({ labelKey, selectedItems, allOptions, onAddItem, onR
     }, [searchTerm, allOptions, selectedItems]);
 
     return (
-        <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-3">
-            <label className="block text-sm font-medium text-gray-200">{t(labelKey)}</label>
+        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-3">
+            <label className="block text-sm font-medium text-gray-700">{t(labelKey)}</label>
             
-            {/* Search Input */}
             <InputField 
                 label=""
                 name={`search_${labelKey}`}
@@ -47,15 +43,15 @@ const MultiSelectSearch = ({ labelKey, selectedItems, allOptions, onAddItem, onR
                 onChange={(e) => setSearchTerm(e.target.value)}
                 required={false}
                 placeholder={t('policy.search')}
+                icon={Search}
             />
 
-            {/* Search Results */}
             {filteredOptions.length > 0 && (
-                <div className="max-h-32 overflow-y-auto space-y-1 rounded-lg border border-sky-700 bg-black/40 p-2">
-                    {filteredOptions.slice(0, 10).map(option => ( // Limitar a 10 resultados
+                <div className="max-h-32 overflow-y-auto space-y-1 rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
+                    {filteredOptions.slice(0, 10).map(option => (
                         <div 
                             key={option}
-                            className="p-2 text-sm text-gray-200 rounded-md hover:bg-sky-700 cursor-pointer"
+                            className="p-2 text-sm text-slate-700 rounded hover:bg-blue-50 cursor-pointer transition-colors"
                             onClick={() => {
                                 onAddItem(option);
                                 setSearchTerm('');
@@ -67,15 +63,14 @@ const MultiSelectSearch = ({ labelKey, selectedItems, allOptions, onAddItem, onR
                 </div>
             )}
 
-            {/* Selected Items */}
             <div className="flex flex-wrap gap-2 min-h-[20px] pt-2">
                 {selectedItems.map((item, index) => (
-                    <span key={index} className="flex items-center bg-sky-700 text-white text-sm font-medium px-2 py-0.5 rounded-full">
+                    <span key={index} className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                         {item}
                         <button
                             type="button"
                             onClick={() => onRemoveItem(item)}
-                            className="ml-1.5 text-sky-200 hover:text-white"
+                            className="ml-1.5 text-blue-600 hover:text-blue-800"
                         >
                             <X className="w-3 h-3" />
                         </button>
@@ -92,7 +87,7 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
     const [formData, setFormData] = useState(initialData || INITIAL_ACTIVITY_STATE);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState('success'); // 'success' or 'error'
+    const [messageType, setMessageType] = useState('success'); 
     const [agendaData, setAgendaData] = useState([]); 
 
     const isReady = !!db && !!userId;
@@ -101,7 +96,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
         ? `${t('activity.form.edit_title')}: ${initialData?.id.substring(0, 8)}...` 
         : t('activity.form.add_title');
 
-    // Fetch Agenda data for dynamic options
     useEffect(() => {
         if (!db) return;
         const agendaRef = ref(db, getDbPaths().agenda);
@@ -113,7 +107,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
         return () => unsubscribe();
     }, [db]);
     
-    // Derived options from fetched agenda data
     const institutionOptions = useMemo(() => {
         const uniqueInstitutions = [...new Set(agendaData.map(item => item.institucion).filter(Boolean))].sort();
         return ['N/A', ...uniqueInstitutions];
@@ -133,7 +126,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
         }));
     };
 
-    // --- Handlers for Multi-Select Institucion ---
     const addInstitution = (institution) => {
         setFormData(prev => ({
             ...prev,
@@ -147,7 +139,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
         }));
     };
 
-    // --- Handlers for Multi-Select Tema ---
     const addTema = (tema) => {
         setFormData(prev => ({
             ...prev,
@@ -164,7 +155,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
         if (!isReady) return; 
 
         setIsLoading(true);
@@ -180,7 +170,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
 
         try {
             const path = getDbPaths().activities;
-            
             if (mode === 'edit' && initialData?.id) {
                 const itemRef = ref(db, `${path}/${initialData.id}`);
                 await set(itemRef, {
@@ -198,10 +187,9 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                 });
                 setMessage(t('activity.form.success_add')); 
             }
-
             setTimeout(onClose, 1000); 
         } catch (error) {
-            console.error(`Error ${mode} Activity document in Realtime DB: `, error);
+            console.error(`Error ${mode} Activity document: `, error);
             setMessage(t('activity.form.fail')); 
             setMessageType('error');
             setIsLoading(false);
@@ -209,10 +197,10 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={formTitle} icon={Clock} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
@@ -228,7 +216,7 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                 />
 
                 {isMeeting && (
-                    <div className="grid grid-cols-2 gap-4 border border-sky-800/50 p-4 rounded-lg bg-sky-950/30">
+                    <div className="grid grid-cols-2 gap-4 border border-slate-200 p-4 rounded-lg bg-slate-50">
                         <SelectField 
                             label={t('activity.form.mode')} 
                             name="meetingMode" 
@@ -262,7 +250,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                     onChange={handleChange} 
                 />
                 
-                {/* --- MODIFICADO: Multi-Select para Institución --- */}
                 <MultiSelectSearch
                     labelKey="activity.form.institution"
                     selectedItems={formData.institution || []}
@@ -272,7 +259,6 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                     t={t}
                 />
                 
-                {/* --- MODIFICADO: Multi-Select para Tema --- */}
                 <MultiSelectSearch
                     labelKey="activity.form.tema"
                     selectedItems={formData.tema || []}
@@ -294,14 +280,14 @@ const ActivityLogForm = ({ userId, db, mode = 'add', initialData = null, onClose
                 <button
                     type="submit"
                     disabled={isLoading || !isReady}
-                    className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                        isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
+                    className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                        isLoading || !isReady ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
                     }`}
                 >
                     {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
                 </button>
                 {message && (
-                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`text-center text-sm mt-3 ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                         {message}
                     </p>
                 )}

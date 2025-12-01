@@ -1,8 +1,6 @@
-// src/components/forms/FinanceDonationForm.jsx
-
 import React, { useState } from 'react';
 import { ref, set, push, serverTimestamp } from 'firebase/database';
-import { Gift, X, Loader2 } from 'lucide-react';
+import { Gift, X } from 'lucide-react';
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import { 
@@ -11,15 +9,13 @@ import {
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// Componente helper para Checkbox (copiado de PressLogForm)
-const CheckboxField = ({ label, name, checked, onChange }) => {
-    const { t } = useTranslation();
+const CheckboxField = ({ label, name, checked, onChange, t }) => {
     return (
-        <label className="flex items-center space-x-2 text-gray-200 hover:text-white cursor-pointer">
+        <label className="flex items-center space-x-2 text-slate-700 hover:text-slate-900 cursor-pointer">
             <input 
                 type="checkbox"
                 name={name}
-                className="rounded text-sky-500 focus:ring-sky-600 bg-sky-950/50 border-sky-700"
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 checked={checked}
                 onChange={onChange}
             />
@@ -38,10 +34,7 @@ const FinanceDonationForm = ({ userId, db, mode = 'add', initialData = null, onC
 
     const isReady = !!db && !!userId;
     const dbPathKey = 'financeDonations';
-    
-    const formTitle = mode === 'edit' 
-        ? t('finance.donations.form_edit')
-        : t('finance.donations.form_add');
+    const formTitle = mode === 'edit' ? t('finance.donations.form_edit') : t('finance.donations.form_add');
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -54,33 +47,20 @@ const FinanceDonationForm = ({ userId, db, mode = 'add', initialData = null, onC
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!isReady) return; 
-
         setIsLoading(true);
         setMessage('');
         setMessageType('success');
 
         try {
             const path = getDbPaths()[dbPathKey];
-            
             if (mode === 'edit' && initialData?.id) {
-                const itemRef = ref(db, `${path}/${initialData.id}`);
-                await set(itemRef, {
-                    ...formData,
-                    updatedAt: serverTimestamp(),
-                    updatedBy: userId,
-                });
+                await set(ref(db, `${path}/${initialData.id}`), { ...formData, updatedAt: serverTimestamp(), updatedBy: userId });
                 setMessage(t('activity.form.success_update'));
             } else {
                 const newItemRef = push(ref(db, path));
-                await set(newItemRef, {
-                    ...formData,
-                    id: newItemRef.key,
-                    createdAt: serverTimestamp(),
-                    createdBy: userId,
-                });
+                await set(newItemRef, { ...formData, id: newItemRef.key, createdAt: serverTimestamp(), createdBy: userId });
                 setMessage(t('activity.form.success_add'));
             }
-
             setTimeout(onClose, 1000); 
         } catch (error) {
             console.error(`Error ${mode} donation document: `, error);
@@ -91,10 +71,10 @@ const FinanceDonationForm = ({ userId, db, mode = 'add', initialData = null, onC
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={formTitle} icon={Gift} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
@@ -127,10 +107,11 @@ const FinanceDonationForm = ({ userId, db, mode = 'add', initialData = null, onC
                     />
                     <div className="flex items-center pt-6">
                         <CheckboxField
-                            label={t('finance.donations.col.isContinued')}
+                            label="finance.donations.col.isContinued"
                             name="isContinued"
                             checked={formData.isContinued}
                             onChange={handleChange}
+                            t={t}
                         />
                     </div>
                 </div>
@@ -171,14 +152,14 @@ const FinanceDonationForm = ({ userId, db, mode = 'add', initialData = null, onC
                 <button
                     type="submit"
                     disabled={isLoading || !isReady}
-                    className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                        isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
+                    className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                        isLoading || !isReady ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
                     }`}
                 >
                     {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
                 </button>
                 {message && (
-                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                         {message}
                     </p>
                 )}

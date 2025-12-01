@@ -1,14 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { ref, set, push, serverTimestamp } from 'firebase/database';
-import { Calendar, X, Plus, Users, Trash2, MessageSquare } from 'lucide-react'; 
+import { Calendar, X, Plus, Users, Trash2, MessageSquare, Search } from 'lucide-react'; 
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import SelectField from '../ui/SelectField.jsx';
 import { 
     INITIAL_AGENDA_STATE, 
-    PILAR_OPTIONS, 
     TIPO_DE_ACTO_OPTIONS, 
-    SECTOR_OPTIONS, 
     CONDICION_OPTIONS, 
     AGENDA_OPTIONS, 
     ANO_OPTIONS, 
@@ -21,7 +19,6 @@ import {
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx'; 
 
-// Estado inicial para un stakeholder
 const INITIAL_STAKEHOLDER_STATE = {
     name: '',
     type: Object.values(STAKEHOLDER_TYPE_OPTIONS)[0], 
@@ -30,7 +27,6 @@ const INITIAL_STAKEHOLDER_STATE = {
     position: STAKEHOLDER_POSITION_OPTIONS[0], 
 };
 
-// Estado inicial para un nuevo mensaje de comunicación
 const INITIAL_COMMS_MESSAGE_STATE = {
     message: '',
     date: new Date().toISOString().slice(0, 10),
@@ -51,8 +47,6 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
     
     const [newStakeholder, setNewStakeholder] = useState(INITIAL_STAKEHOLDER_STATE);
     const [newCommMessage, setNewCommMessage] = useState(INITIAL_COMMS_MESSAGE_STATE);
-
-    // TAREA 6: Nuevo estado para la búsqueda de stakeholders
     const [stakeholderSearchTerm, setStakeholderSearchTerm] = useState('');
 
     const isReady = !!db && !!userId;
@@ -60,7 +54,6 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
         ? `${t('policy.form.edit_agenda')}: ${initialData?.nombre}` 
         : t('policy.form.add_agenda');
 
-    // --- Handlers de Stakeholder ---
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -101,13 +94,11 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
         setFormData(prev => ({ ...prev, stakeholders: prev.stakeholders.filter(s => s.id !== id) }));
     };
 
-    // --- Handlers de Communication Message ---
     const handleCommMessageChange = (e) => {
         const { name, value } = e.target;
         setNewCommMessage(prev => ({ ...prev, [name]: value }));
     };
 
-    // TAREA 6: Actualizado para añadir/quitar stakeholders
     const handleCommStakeholderToggle = (stakeholderName) => {
         setNewCommMessage(prev => {
             const currentKeys = prev.stakeholderKeys;
@@ -117,13 +108,11 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                 : [...currentKeys, stakeholderName]; 
             return { ...prev, stakeholderKeys: newKeys };
         });
-        // Limpiar la búsqueda después de seleccionar
         setStakeholderSearchTerm('');
     };
 
     const addCommMessage = (e) => {
         e.preventDefault();
-        
         if (!newCommMessage.message.trim()) {
             setMessage(t('comms.form.empty_message_error'));
             setMessageType('error');
@@ -146,19 +135,14 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
         setFormData(prev => ({ ...prev, commsMessages: prev.commsMessages.filter(msg => msg.id !== id) }));
     };
     
-    // TAREA 6: Lógica de filtrado para la búsqueda de stakeholders
     const filteredStakeholders = useMemo(() => {
-        if (!stakeholderSearchTerm) {
-            return []; // No mostrar nada si no hay búsqueda
-        }
+        if (!stakeholderSearchTerm) return [];
         return formData.stakeholders.filter(
             s => s.name.toLowerCase().includes(stakeholderSearchTerm.toLowerCase()) &&
-                 !newCommMessage.stakeholderKeys.includes(s.name) // Ocultar los ya seleccionados
+                 !newCommMessage.stakeholderKeys.includes(s.name)
         );
     }, [stakeholderSearchTerm, formData.stakeholders, newCommMessage.stakeholderKeys]);
 
-
-    // --- Handle Submit ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!isReady) return; 
@@ -168,7 +152,6 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
 
         try {
             const path = getDbPaths().agenda;
-            
             const cleanData = {
                 ...formData,
                 stakeholders: (formData.stakeholders || []).map(({ id, ...rest }) => rest),
@@ -187,7 +170,7 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
 
             setTimeout(onClose, 1000); 
         } catch (error) {
-            console.error(`Error ${mode} Agenda document in Realtime DB: `, error);
+            console.error(`Error ${mode} Agenda document: `, error);
             setMessage(t('policy.form.fail'));
             setMessageType('error');
             setIsLoading(false);
@@ -195,26 +178,27 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={formTitle} icon={Calendar} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 
-                {/* --- Campos Principales --- */}
                 <InputField label={t('policy.form.nombre')} name="nombre" value={formData.nombre} onChange={handleFormChange} />
                 <InputField label={t('policy.form.solicitud')} name="solicitud" value={formData.solicitud} onChange={handleFormChange} rows={2} />
                 <div className="grid grid-cols-2 gap-4">
-                    <SelectField label={t('policy.form.pilar')} name="pilar" options={PILAR_OPTIONS} value={formData.pilar} onChange={handleFormChange} />
+                    {/* Changed to InputField for free text entry */}
+                    <InputField label={t('policy.form.pilar')} name="pilar" value={formData.pilar} onChange={handleFormChange} />
                     <SelectField label={t('policy.form.tipo_acto')} name="tipoDeActo" options={TIPO_DE_ACTO_OPTIONS} value={formData.tipoDeActo} onChange={handleFormChange} />
                 </div>
                 <InputField label={t('policy.form.impacto')} name="impacto" value={formData.impacto} onChange={handleFormChange} rows={2} />
                 <div className="grid grid-cols-2 gap-4">
-                    <SelectField label={t('policy.form.sector')} name="sector" options={SECTOR_OPTIONS} value={formData.sector} onChange={handleFormChange} />
+                    {/* Changed to InputField for free text entry */}
+                    <InputField label={t('policy.form.sector')} name="sector" value={formData.sector} onChange={handleFormChange} />
                     <InputField label={t('policy.form.institucion')} name="institucion" value={formData.institucion} onChange={handleFormChange} />
                 </div>
                 <InputField 
@@ -239,14 +223,14 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                 </div>
                 <InputField label={t('policy.form.ayuda_memoria')} name="ayudaMemoria" type="url" value={formData.ayudaMemoria} onChange={handleFormChange} required={false} />
 
-                {/* --- Stakeholder Entry Section --- */}
-                <div className="border-t border-sky-800/50 pt-4 mt-4">
-                    <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                        <Users className="w-5 h-5 mr-2 text-sky-400" />
+                {/* Stakeholders Section */}
+                <div className="border-t border-slate-100 pt-6 mt-6">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
+                        <Users className="w-5 h-5 mr-2 text-blue-600" />
                         {t('policy.form.stakeholder_title')} ({formData.stakeholders.length})
                     </h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-end bg-sky-950/30 border border-sky-800/50 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-end bg-slate-50 border border-slate-200 p-4 rounded-lg">
                          <InputField 
                             label={t('policy.form.stakeholder_name')} 
                             name="name" 
@@ -285,31 +269,29 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                         <button
                             type="button"
                             onClick={addStakeholder}
-                            className="w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition duration-300 shadow-md h-10"
-                            title="Add Stakeholder"
+                            className="w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors"
                         >
                             <Plus className="w-4 h-4 mr-1" /> {t('policy.form.stakeholder_add')}
                         </button>
                     </div>
 
-                    <div className="max-h-40 overflow-y-auto border border-sky-800/50 rounded-lg p-2 bg-black/30">
+                    <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-1 bg-white">
                         {formData.stakeholders.length === 0 ? (
-                            <p className="text-center text-sm text-gray-500 p-2">{t('policy.form.stakeholder_empty')}</p>
+                            <p className="text-center text-sm text-slate-400 p-2">{t('policy.form.stakeholder_empty')}</p>
                         ) : (
                             <ul className="space-y-1">
                                 {formData.stakeholders.map((s, index) => (
-                                    <li key={s.id} className="flex justify-between items-start bg-sky-950/50 p-2 rounded-md hover:bg-sky-900/60">
+                                    <li key={s.id} className="flex justify-between items-start bg-slate-50 p-2 rounded hover:bg-slate-100 transition-colors">
                                         <div className="flex-1">
-                                            <p className="text-sm font-medium text-white">{index + 1}. {s.name}</p>
-                                            <p className="text-xs text-gray-400 capitalize">
+                                            <p className="text-sm font-medium text-slate-700">{index + 1}. {s.name}</p>
+                                            <p className="text-xs text-slate-500 capitalize">
                                                 {t(s.role)} | {t(s.position)} | {s.ambito} | {t(`stakeholder.category.${s.type.replace(/ /g, '_')}`)}
                                             </p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => removeStakeholder(s.id)}
-                                            className="text-red-400 hover:text-red-300 p-1 ml-2"
-                                            title="Remove Stakeholder"
+                                            className="text-red-500 hover:text-red-700 p-1 ml-2"
                                         >
                                             <Trash2 className="w-3 h-3" />
                                         </button>
@@ -320,15 +302,14 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                     </div>
                 </div>
 
-                {/* --- TAREA 6: Sección de Mensajes de Comunicación (Actualizada) --- */}
-                <div className="border-t border-sky-800/50 pt-4 mt-4">
-                    <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                        <MessageSquare className="w-5 h-5 mr-2 text-sky-400" />
+                {/* Communications Section */}
+                <div className="border-t border-slate-100 pt-6 mt-6">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
+                        <MessageSquare className="w-5 h-5 mr-2 text-blue-600" />
                         {t('comms.form.title')} ({(formData.commsMessages || []).length})
                     </h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-start bg-sky-950/30 border border-sky-800/50 p-4 rounded-lg">
-                        {/* Columna Izquierda: Mensaje y Fecha */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 items-start bg-slate-50 border border-slate-200 p-4 rounded-lg">
                         <div className="space-y-4">
                             <InputField 
                                 label={t('comms.form.message_label')} 
@@ -348,9 +329,7 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                             />
                         </div>
                         
-                        {/* Columna Derecha: Selección de Stakeholders y Botón */}
                         <div className="space-y-3">
-                            {/* TAREA 6: Input de Búsqueda */}
                             <InputField 
                                 label={t('comms.form.select_stakeholders_search')}
                                 name="stakeholderSearch" 
@@ -358,15 +337,15 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                                 onChange={(e) => setStakeholderSearchTerm(e.target.value)} 
                                 required={false} 
                                 placeholder={t('comms.form.search_placeholder')}
+                                icon={Search}
                             />
                             
-                            {/* TAREA 6: Lista de resultados de búsqueda */}
                             {filteredStakeholders.length > 0 && (
-                                <div className="max-h-24 overflow-y-auto space-y-1 rounded-lg border border-sky-700 bg-black/40 p-2">
+                                <div className="max-h-24 overflow-y-auto space-y-1 rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
                                     {filteredStakeholders.map(s => (
                                         <div 
                                             key={s.id}
-                                            className="p-2 text-sm text-gray-200 rounded-md hover:bg-sky-700 cursor-pointer"
+                                            className="p-2 text-sm text-slate-700 rounded hover:bg-blue-50 cursor-pointer transition-colors"
                                             onClick={() => handleCommStakeholderToggle(s.name)}
                                         >
                                             {s.name}
@@ -375,18 +354,17 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                                 </div>
                             )}
 
-                            {/* TAREA 6: Stakeholders seleccionados */}
                             {newCommMessage.stakeholderKeys.length > 0 && (
                                 <div className="space-y-1 pt-2">
-                                    <label className="block text-xs font-medium text-gray-400">{t('comms.form.selected')}:</label>
+                                    <label className="block text-xs font-medium text-slate-500">{t('comms.form.selected')}:</label>
                                     <div className="flex flex-wrap gap-2">
                                         {newCommMessage.stakeholderKeys.map(name => (
-                                            <span key={name} className="flex items-center bg-sky-700 text-white text-sm font-medium px-2 py-0.5 rounded-full">
+                                            <span key={name} className="flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
                                                 {name}
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCommStakeholderToggle(name)}
-                                                    className="ml-1.5 text-sky-200 hover:text-white"
+                                                    className="ml-1.5 text-blue-600 hover:text-blue-900"
                                                 >
                                                     <X className="w-3 h-3" />
                                                 </button>
@@ -397,35 +375,33 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                             )}
 
                             {formData.stakeholders.length === 0 && (
-                                <p className="text-sm text-gray-500">{t('comms.form.no_stakeholders')}</p>
+                                <p className="text-sm text-slate-400 italic">{t('comms.form.no_stakeholders')}</p>
                             )}
                             
                             <button
                                 type="button"
                                 onClick={addCommMessage}
-                                className="w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition duration-300 shadow-md"
+                                className="w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-md transition-colors"
                             >
                                 <Plus className="w-4 h-4 mr-1" /> {t('comms.form.add_message')}
                             </button>
                         </div>
                     </div>
 
-                    {/* Lista de Mensajes Añadidos */}
-                    <div className="max-h-40 overflow-y-auto border border-sky-800/50 rounded-lg p-2 bg-black/30 space-y-1">
+                    <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-1 bg-white space-y-1">
                         {(formData.commsMessages || []).length === 0 ? (
-                            <p className="text-center text-sm text-gray-500 p-2">{t('comms.form.no_messages')}</p>
+                            <p className="text-center text-sm text-slate-400 p-2">{t('comms.form.no_messages')}</p>
                         ) : (
                             (formData.commsMessages || []).map((msg) => (
-                                <li key={msg.id} className="flex justify-between items-start bg-sky-950/50 p-2 rounded-md hover:bg-sky-900/60">
+                                <li key={msg.id} className="flex justify-between items-start bg-slate-50 p-2 rounded hover:bg-slate-100 transition-colors">
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-200 w-full truncate" title={msg.message}>{msg.message}</p>
-                                        <p className="text-xs text-sky-400">{msg.date} - [{msg.stakeholderKeys.join(', ')}]</p>
+                                        <p className="text-sm font-medium text-slate-700 w-full truncate" title={msg.message}>{msg.message}</p>
+                                        <p className="text-xs text-blue-500 mt-0.5">{msg.date} - [{msg.stakeholderKeys.join(', ')}]</p>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => removeCommMessage(msg.id)}
-                                        className="text-red-400 hover:text-red-300 p-1 ml-2"
-                                        title="Remove Message"
+                                        className="text-red-500 hover:text-red-700 p-1 ml-2"
                                     >
                                         <Trash2 className="w-3 h-3" />
                                     </button>
@@ -435,21 +411,22 @@ const AgendaForm = ({ userId, db, mode = 'add', initialData = null, onClose }) =
                     </div>
                 </div>
 
-                {/* --- Botón de Submit --- */}
-                <button
-                    type="submit"
-                    disabled={isLoading || !isReady}
-                    className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                        isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
-                    }`}
-                >
-                    {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('policy.form.update_item') : t('policy.form.add_item'))}
-                </button>
-                {message && (
-                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                        {message}
-                    </p>
-                )}
+                <div className="pt-4 border-t border-slate-200">
+                    <button
+                        type="submit"
+                        disabled={isLoading || !isReady}
+                        className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                            isLoading || !isReady ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
+                        }`}
+                    >
+                        {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('policy.form.update_item') : t('policy.form.add_item'))}
+                    </button>
+                    {message && (
+                        <p className={`text-center text-sm mt-3 ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                            {message}
+                        </p>
+                    )}
+                </div>
             </form>
         </div>
     );

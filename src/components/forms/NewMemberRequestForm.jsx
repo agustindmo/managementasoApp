@@ -1,8 +1,6 @@
-// src/components/forms/NewMemberRequestForm.jsx
-
 import React, { useState } from 'react';
 import { ref, set, push, serverTimestamp } from 'firebase/database';
-import { UserPlus, Loader2, CheckCircle, XCircle, Save, Plus, Trash2, X } from 'lucide-react'; // Import X
+import { UserPlus, Loader2, CheckCircle, XCircle, Save, Plus, Trash2, X } from 'lucide-react'; 
 import CardTitle from '../ui/CardTitle.jsx';
 import InputField from '../ui/InputField.jsx';
 import SelectField from '../ui/SelectField.jsx';
@@ -16,7 +14,6 @@ import {
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// --- Helper Component for Tag-like Input ---
 const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t, buttonLabelKey }) => {
     const [value, setValue] = useState('');
 
@@ -30,7 +27,7 @@ const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t, buttonLabelKey 
 
     return (
         <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-200">{t(labelKey)}</label>
+            <label className="block text-sm font-medium text-gray-700">{t(labelKey)}</label>
             <div className="flex space-x-2">
                 <InputField 
                     label=""
@@ -42,7 +39,7 @@ const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t, buttonLabelKey 
                 <button
                     type="button"
                     onClick={handleAdd}
-                    className="flex-shrink-0 flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition duration-300 shadow-md h-10 mt-1"
+                    className="flex-shrink-0 flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition duration-300 shadow-sm h-10 mt-1"
                 >
                     <Plus className="w-4 h-4" />
                     <span className="ml-1 hidden sm:inline">{t(buttonLabelKey)}</span>
@@ -50,12 +47,12 @@ const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t, buttonLabelKey 
             </div>
             <div className="flex flex-wrap gap-2 min-h-[20px]">
                 {items.map((item, index) => (
-                    <span key={index} className="flex items-center bg-sky-700 text-white text-sm font-medium px-2 py-0.5 rounded-full">
+                    <span key={index} className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-2 py-0.5 rounded-full">
                         {item}
                         <button
                             type="button"
                             onClick={() => onRemoveItem(index)}
-                            className="ml-1.5 text-sky-200 hover:text-white"
+                            className="ml-1.5 text-blue-600 hover:text-blue-800"
                         >
                             <X className="w-3 h-3" />
                         </button>
@@ -67,7 +64,7 @@ const TagInput = ({ labelKey, items, onAddItem, onRemoveItem, t, buttonLabelKey 
 };
 
 
-const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onClose
+const NewMemberRequestForm = ({ userId, db, onClose }) => { 
     const { t } = useTranslation();
     const [formData, setFormData] = useState(INITIAL_MEMBER_REQUEST_STATE);
     const [cityOptions, setCityOptions] = useState(ECUADOR_DATA[formData.province] || []);
@@ -84,7 +81,7 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
         setFormData(prev => ({
             ...prev,
             province: newProvince,
-            city: newCities[0] || '' // Seleccionar la primera ciudad de la nueva lista
+            city: newCities[0] || '' 
         }));
     };
 
@@ -93,7 +90,6 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // --- Handlers for Partners ---
     const addPartner = (partner) => {
         setFormData(prev => ({ ...prev, partners: [...prev.partners, partner] }));
     };
@@ -101,7 +97,6 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
         setFormData(prev => ({ ...prev, partners: prev.partners.filter((_, i) => i !== index) }));
     };
 
-    // --- Handlers for Commercial Refs ---
     const addReference = (reference) => {
         setFormData(prev => ({ ...prev, commercial_refs: [...prev.commercial_refs, reference] }));
     };
@@ -125,21 +120,14 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
             await set(newItemRef, {
                 ...formData,
                 id: newItemRef.key, 
-                status: 'pending_director_approval', // Estado inicial
+                status: 'pending_director_approval', 
                 createdBy: userId,
                 createdAt: serverTimestamp(),
             });
             
             setMessage(t('member_request.form.success_add'));
             setMessageType('success');
-            
-            // --- MODIFICADO ---
-            // Resetear formulario ya no es necesario, cerramos el modal
-            // setFormData(INITIAL_MEMBER_REQUEST_STATE); 
-            // setCityOptions(ECUADOR_DATA[INITIAL_MEMBER_REQUEST_STATE.province] || []);
-            // setTimeout(() => setMessage(''), 3000); 
-
-            setTimeout(onClose, 1000); // Llamar a onClose en lugar de resetear
+            setTimeout(onClose, 1000); 
 
         } catch (error) {
             console.error("Error creating new member request: ", error);
@@ -151,20 +139,18 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            {/* --- MODIFICADO: Añadido botón de cerrar --- */}
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={t('member_request.form.title')} icon={UserPlus} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 
-                {/* Sección 1: Compañía */}
-                <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">{t('member_request.form.company_title')}</h3>
+                <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-800">{t('member_request.form.company_title')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputField label={t('member_request.form.company_name')} name="company_name" value={formData.company_name} onChange={handleChange} />
                         <InputField label={t('member_request.form.commercial_name')} name="commercial_name" value={formData.commercial_name} onChange={handleChange} required={false} />
@@ -182,15 +168,13 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
                     />
                 </div>
 
-                {/* Sección 2: Actividad y Ubicación */}
-                <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">{t('member_request.form.activity_location_title')}</h3>
+                <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-800">{t('member_request.form.activity_location_title')}</h3>
                     <SelectField label={t('profile.activity')} name="activity" options={INDUSTRY_ACTIVITIES} value={formData.activity} onChange={handleChange} />
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <InputField label={t('member_request.form.country')} name="country" value={formData.country} onChange={handleChange} />
                         
-                        {/* Campos condicionales para Ecuador */}
                         {formData.country === 'Ecuador' && (
                             <>
                                 <SelectField label={t('member_request.form.province')} name="province" options={ECUADOR_PROVINCES} value={formData.province} onChange={handleProvinceChange} />
@@ -200,9 +184,8 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
                     </div>
                 </div>
 
-                {/* Sección 3: Referencias y Riesgo */}
-                <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">{t('member_request.form.risk_title')}</h3>
+                <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-800">{t('member_request.form.risk_title')}</h3>
                     
                     <TagInput
                         labelKey="member_request.form.commercial_refs"
@@ -231,10 +214,9 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
                     />
                 </div>
 
-                {/* Botón de Guardar */}
-                <div className="flex items-center justify-end space-x-4 pt-4 border-t border-sky-800/50">
+                <div className="flex items-center justify-end space-x-4 pt-4 border-t border-slate-200">
                     {message && (
-                        <span className={`text-sm flex items-center ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                        <span className={`text-sm flex items-center ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                             {messageType === 'success' ? <CheckCircle className="w-4 h-4 mr-1" /> : <XCircle className="w-4 h-4 mr-1" />} 
                             {message}
                         </span>
@@ -242,8 +224,8 @@ const NewMemberRequestForm = ({ userId, db, onClose }) => { // <-- Añadido onCl
                     <button
                         type="submit"
                         disabled={isLoading || !isReady}
-                        className={`flex justify-center items-center py-2 px-5 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                            isLoading ? 'bg-sky-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700'
+                        className={`flex justify-center items-center py-2.5 px-5 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                            isLoading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md'
                         }`}
                     >
                         {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}

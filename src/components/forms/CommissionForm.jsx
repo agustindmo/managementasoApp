@@ -1,5 +1,3 @@
-// src/components/forms/CommissionForm.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, set, push, serverTimestamp, onValue } from 'firebase/database';
 import { Users, X, Loader2, Plus, Trash2, Search } from 'lucide-react';
@@ -11,10 +9,6 @@ import {
 import { getDbPaths } from '../../services/firebase.js'; 
 import { useTranslation } from '../../context/TranslationContext.jsx';
 
-// --- TASK 6: Removed snapshotToUserArray ---
-// --- TASK 6: Removed MemberMultiSelect Helper Component ---
-
-// --- TASK 6: NEW Helper Component for managing member list ---
 const CommissionMemberInput = ({ members, onAddMember, onRemoveMember, t }) => {
     
     const INITIAL_NEW_MEMBER = { name: '', email: '', phone: '', company: '' };
@@ -30,16 +24,15 @@ const CommissionMemberInput = ({ members, onAddMember, onRemoveMember, t }) => {
             alert(t('commission.form.name_required') || 'Member name is required.');
             return;
         }
-        onAddMember(newMember); // Add the member object
-        setNewMember(INITIAL_NEW_MEMBER); // Clear the form
+        onAddMember(newMember); 
+        setNewMember(INITIAL_NEW_MEMBER); 
     };
 
     return (
-        <div className="p-4 rounded-lg border border-sky-800/50 bg-sky-950/30 space-y-4">
-            <label className="block text-sm font-medium text-gray-200">{t('commission.col.members')}</label>
+        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-4">
+            <label className="block text-sm font-medium text-gray-700">{t('commission.col.members')}</label>
 
-            {/* Input fields for new member */}
-            <div className="p-3 border border-sky-700/50 rounded-lg space-y-3">
+            <div className="p-3 border border-slate-200 bg-white rounded-lg space-y-3 shadow-sm">
                 <InputField 
                     label={t('commission.form.member_name')}
                     name="name"
@@ -72,31 +65,30 @@ const CommissionMemberInput = ({ members, onAddMember, onRemoveMember, t }) => {
                 <button
                     type="button"
                     onClick={handleAddClick}
-                    className="w-full flex justify-center items-center py-2 px-3 border border-transparent text-xs font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-700"
+                    className="w-full flex justify-center items-center py-2 px-3 border border-transparent text-xs font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors"
                 >
                     <Plus className="w-4 h-4 mr-2" />
                     {t('commission.form.add_member')}
                 </button>
             </div>
 
-            {/* List of added members */}
             <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-300">{t('commission.form.member_list')}</h4>
+                <h4 className="text-sm font-medium text-slate-600">{t('commission.form.member_list')}</h4>
                 {members.length === 0 ? (
-                    <p className="text-xs text-gray-500">{t('commission.form.no_members')}</p>
+                    <p className="text-xs text-slate-400 italic">{t('commission.form.no_members')}</p>
                 ) : (
                     <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
                         {members.map((member, index) => (
-                            <div key={index} className="flex items-start justify-between bg-sky-800/50 p-2.5 rounded-lg">
+                            <div key={index} className="flex items-start justify-between bg-white border border-slate-200 p-2.5 rounded-lg hover:shadow-sm transition-shadow">
                                 <div className="text-sm">
-                                    <p className="font-semibold text-white">{member.name}</p>
-                                    <p className="text-xs text-gray-300">{member.company || 'N/A'}</p>
-                                    <p className="text-xs text-gray-400">{member.email || 'N/A'} {member.email && member.phone && ' | '} {member.phone || ''}</p>
+                                    <p className="font-semibold text-slate-800">{member.name}</p>
+                                    <p className="text-xs text-slate-500">{member.company || 'N/A'}</p>
+                                    <p className="text-xs text-slate-400">{member.email || 'N/A'} {member.email && member.phone && ' | '} {member.phone || ''}</p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => onRemoveMember(index)}
-                                    className="p-1 text-red-400 hover:text-red-200"
+                                    className="p-1 text-red-500 hover:text-red-700 transition-colors"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -110,17 +102,14 @@ const CommissionMemberInput = ({ members, onAddMember, onRemoveMember, t }) => {
 };
 
 
-// --- Componente Principal del Formulario ---
 const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose, role }) => {
     const { t } = useTranslation();
     const isAdmin = role === 'admin';
     
-    // --- TASK 6: Updated state to use 'members' array ---
     const [formData, setFormData] = useState(initialData ? 
         { ...initialData, members: initialData.members || [] } : 
         INITIAL_COMMISSION_STATE
     );
-    // --- TASK 6: Removed allMembers state ---
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
@@ -132,8 +121,6 @@ const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose,
         ? t('commission.form.edit_title')
         : t('commission.form.add_title');
 
-    // --- TASK 6: Removed useEffect that fetched user profiles ---
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -142,7 +129,6 @@ const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose,
         }));
     };
 
-    // --- TASK 6: Handlers for the new member object list ---
     const handleAddMember = (memberObject) => {
         setFormData(prev => ({
             ...prev,
@@ -156,7 +142,6 @@ const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose,
             members: (prev.members || []).filter((_, index) => index !== indexToRemove)
         }));
     };
-    // --- End Task 6 Handlers ---
 
 
     const handleSubmit = async (e) => {
@@ -170,7 +155,6 @@ const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose,
         try {
             const path = getDbPaths()[dbPathKey];
             
-            // FormData is already in the correct format { name, scope, members: [...] }
             if (mode === 'edit' && initialData?.id) {
                 const itemRef = ref(db, `${path}/${initialData.id}`);
                 await set(itemRef, {
@@ -200,10 +184,10 @@ const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose,
     };
 
     return (
-        <div className="rounded-2xl border border-sky-700/50 bg-black/40 shadow-2xl backdrop-blur-lg overflow-hidden max-w-4xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="flex justify-between items-center pr-4">
                 <CardTitle title={formTitle} icon={Users} />
-                <button onClick={onClose} className="p-3 text-gray-400 hover:text-white transition" title="Close Form">
+                <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition" title="Close">
                     <X className="w-5 h-5" />
                 </button>
             </div>
@@ -227,7 +211,6 @@ const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose,
                     disabled={!isAdmin}
                 />
 
-                {/* --- TASK 6: Replaced MemberMultiSelect --- */}
                 <CommissionMemberInput
                     members={formData.members || []}
                     onAddMember={handleAddMember}
@@ -239,15 +222,15 @@ const CommissionForm = ({ userId, db, mode = 'add', initialData = null, onClose,
                     <button
                         type="submit"
                         disabled={isLoading || !isReady}
-                        className={`w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition duration-300 ease-in-out ${
-                            isLoading || !isReady ? 'bg-sky-400 cursor-not-allowed opacity-70' : 'bg-sky-600 hover:bg-sky-700'
+                        className={`w-full flex justify-center items-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white transition duration-300 ease-in-out ${
+                            isLoading || !isReady ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
                         }`}
                     >
                         {isLoading ? t('activity.form.saving') : !isReady ? t('activity.form.connecting') : (mode === 'edit' ? t('activity.form.update') : t('activity.form.add'))}
                     </button>
                 )}
                 {message && (
-                    <p className={`text-center text-sm mt-2 ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`text-center text-sm mt-3 ${messageType === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                         {message}
                     </p>
                 )}
