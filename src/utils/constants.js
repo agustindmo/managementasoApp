@@ -1,6 +1,6 @@
 import { ECUADOR_DATA } from './ecuador_data.js'; 
 
-// --- TAREA: Constante USER_ROLES añadida ---
+// --- USER ROLES ---
 export const USER_ROLES = {
     ADMIN: 'admin',
     DIRECTOR: 'director',
@@ -9,6 +9,7 @@ export const USER_ROLES = {
     USER_INVITEE: 'userinvitee'
 };
 
+// --- AGENDA & GENERAL OPTIONS ---
 export const PILAR_OPTIONS = [
     "apertura comercial", "bioseguridad", "competitividad",
     "defense COMERCIAL", "formalidad", "operatividad",
@@ -36,10 +37,10 @@ export const ANO_OPTIONS = [ALL_YEAR_FILTER, ...Array.from({ length: 11 }, (_, i
 
 export const INITIAL_AGENDA_STATE = {
     nombre: '', solicitud: '', 
-    pilar: '', // Changed: Free text default
+    pilar: '', 
     tipoDeActo: TIPO_DE_ACTO_OPTIONS[0],
     impacto: '', 
-    sector: '', // Changed: Free text default
+    sector: '', 
     institucion: '', 
     condicion: CONDICION_OPTIONS[0], agenda: AGENDA_OPTIONS[0], ayudaMemoria: '', 
     ano: currentYear.toString(), 
@@ -54,7 +55,7 @@ export const INITIAL_MILESTONE_STATE = {
     ahorro: 0, archivo: '', 
 };
 
-// Activity Log Constants
+// --- ACTIVITY LOG ---
 export const ACTIVITY_TYPE_OPTIONS = ["letter", "meeting"];
 export const MEETING_MODE_OPTIONS = ["in person", "virtual", "hybrid"];
 
@@ -69,7 +70,7 @@ export const INITIAL_ACTIVITY_STATE = {
     documentLink: '', 
 };
 
-// Stakeholder Constants
+// --- STAKEHOLDER GENERAL ---
 export const STAKEHOLDER_TYPE_OPTIONS = {
     'Public': 'public',
     'Private Sector': 'private',
@@ -93,8 +94,7 @@ export const STAKEHOLDER_POSITION_OPTIONS = [
     "stakeholder.position.neutral" 
 ];
 
-
-// --- Constantes de Perfil de Miembro ---
+// --- MEMBER PROFILE & DIRECTORY ---
 export { ECUADOR_DATA };
 export const ECUADOR_PROVINCES = Object.keys(ECUADOR_DATA).sort();
 
@@ -132,9 +132,8 @@ export const INITIAL_USER_PROFILE_STATE = {
     farms: [], 
 };
 
-// --- Mapas para filtros de tablas ---
+// --- MAPS FOR TABLES ---
 export const AGENDA_COLUMN_OPTIONS_MAP = {
-    // Removed 'pilar' and 'sector' to enable text search behavior
     tipoDeActo: TIPO_DE_ACTO_OPTIONS,
     condicion: CONDICION_OPTIONS,
     agenda: AGENDA_OPTIONS,
@@ -152,9 +151,7 @@ export const ACTIVITY_COLUMN_OPTIONS_MAP = {
     meetingMode: MEETING_MODE_OPTIONS,
 };
 
-// --- Constantes para Tablas de Perfil de Admin (ACTUALIZADO) ---
-
-// 1. Columnas para la Pestaña de MIEMBROS
+// --- ADMIN PROFILE TABLES ---
 export const MEMBERS_PROFILE_TABLE_COLUMNS = [
     { labelKey: "profile.col.email", key: "email", sortable: true, filterable: true, type: 'string' },
     { labelKey: "profile.col.user_id", key: "id", sortable: false, filterable: true, type: 'string' },
@@ -168,7 +165,6 @@ export const MEMBERS_PROFILE_TABLE_COLUMNS = [
     { labelKey: "profile.col.farm_certifications", key: "farm_certifications", sortable: false, filterable: false, optionsKey: 'certifications', type: 'cert_array' },
 ];
 
-// 2. Columnas para la Pestaña de FINCAS
 export const FARMS_PROFILE_TABLE_COLUMNS = [
     { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
     { labelKey: "profile.col.farm_province", key: "province", sortable: true, filterable: true, optionsKey: 'farm_province', type: 'string' },
@@ -177,7 +173,6 @@ export const FARMS_PROFILE_TABLE_COLUMNS = [
     { labelKey: "profile.col.farm_workers", key: "workers", sortable: true, filterable: true, type: 'number' },
 ];
 
-// 3. Columnas para la Pestaña de CONTACTOS
 export const CONTACTS_PROFILE_TABLE_COLUMNS = [
     { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
     { labelKey: "profile.col.contact_name", key: "contact_name", sortable: true, filterable: true, type: 'string' },
@@ -194,7 +189,6 @@ export const PROFILE_COLUMN_OPTIONS_MAP = {
     boolean: ["Yes", "No"],
 };
 
-// Mapas de puntuación para el gráfico de stakeholders
 export const ROLE_SCORE_MAP = {
     "stakeholder.role.other": 1,
     "stakeholder.role.technical": 2,
@@ -208,7 +202,7 @@ export const POSITION_SCORE_MAP = {
     "stakeholder.position.against": 1,
 };
 
-// Constantes para Log de Prensa
+// --- COMMUNICATIONS: PRESS LOG ---
 export const PRESS_LOG_ACTION_OPTIONS = [
     "Interview", "Press Release", "Press Conference", "Meetings", "Training"
 ];
@@ -250,13 +244,119 @@ export const PRESS_LOG_COLUMN_OPTIONS_MAP = {
     action: PRESS_LOG_ACTION_OPTIONS,
 };
 
+// --- COMMUNICATIONS: IMPACT TRACKER (NEW) ---
 
-// --- Constantes de Media Stakeholder (ACTUALIZADAS) ---
+// 1. Metric definitions per Channel
+export const CHANNEL_METRICS_MAP = {
+    'RRSS': [
+        { key: 'impresiones_rrss', label: 'Impresiones Totales', type: 'number' },
+        { key: 'alcance_rrss', label: 'Cuentas Alcanzadas', type: 'number' },
+        { key: 'interacciones_rrss', label: 'Interacciones (Likes/Comments)', type: 'number' },
+        { key: 'engagement_rate_rrss', label: 'Engagement Rate (%)', type: 'number' },
+        { key: 'reproducciones_video', label: 'Reproducciones de Video', type: 'number' },
+        { key: 'retencion_promedio_video_seg', label: 'Retención Promedio (seg)', type: 'number' }
+    ],
+    'Web': [
+        { key: 'sesiones_web', label: 'Sesiones Generadas', type: 'number' },
+        { key: 'usuarios_web', label: 'Usuarios Únicos', type: 'number' },
+        { key: 'pageviews_contenido', label: 'Vistas de Página', type: 'number' },
+        { key: 'tiempo_medio_pagina_seg', label: 'Tiempo Medio (seg)', type: 'number' },
+        { key: 'descargas', label: 'Descargas', type: 'number' }
+    ],
+    'Email': [
+        { key: 'emails_enviados', label: 'Emails Enviados', type: 'number' },
+        { key: 'tasa_apertura', label: 'Tasa de Apertura (%)', type: 'number' },
+        { key: 'tasa_click_email', label: 'Tasa de Clics (CTR %)', type: 'number' },
+        { key: 'tasa_rebote_email', label: 'Tasa de Rebote (%)', type: 'number' }
+    ],
+    'Free press / medios': [
+        { key: 'n_menciones_medios', label: 'Número de Menciones', type: 'number' },
+        { key: 'n_medios_distintos', label: 'Medios Distintos', type: 'number' },
+        { key: 'alcance_prensa_aprox', label: 'Audiencia Potencial', type: 'number' },
+        { key: 'tono_cobertura', label: 'Tono (Pos/Neu/Neg)', type: 'select', options: ['Positivo', 'Neutro', 'Negativo'] }
+    ],
+    'Evento / actividad presencial': [
+        { key: 'asistentes_totales', label: 'Asistentes Totales', type: 'number' },
+        { key: 'n_citas_voceria', label: 'Citas de Vocería', type: 'number' }
+    ]
+};
+
+// 2. Strategy Mapping
+export const COMMUNICATIONS_STRATEGY_DATA = [
+    {
+        area: "Com. interna",
+        producto_macro: "Documento institucional / escrito",
+        producto_especifico: "Comunicados oficiales / boletines",
+        formato: "Texto",
+        canal: "RRSS",
+        objetivo: "Informar / transparentar",
+        publico: "Interno (equipo AEBE)",
+        impacto: "Awareness / visibilidad",
+        reputacion: "Alto"
+    },
+    {
+        area: "Com. externa (medios digitales)",
+        producto_macro: "Pieza gráfica / visual",
+        producto_especifico: "Difusión a socios",
+        formato: "Gráfico",
+        canal: "Web",
+        objetivo: "Alinear internamente",
+        publico: "Socios",
+        impacto: "Engagement / vínculo",
+        reputacion: "Medio"
+    },
+    {
+        area: "Relaciones Públicas",
+        producto_macro: "Contenido digital / red",
+        producto_especifico: "Piezas para partners",
+        formato: "Audiovisual",
+        canal: "Email",
+        objetivo: "Posicionar reputación",
+        publico: "Medios de comunicación",
+        impacto: "Conversión / acción",
+        reputacion: "Bajo"
+    },
+    {
+        area: "Com. Institucional (PP)",
+        producto_macro: "Activo web / plataforma",
+        producto_especifico: "Mensajes institucionales",
+        formato: "Presentación",
+        canal: "Free press / medios",
+        objetivo: "Fortalecer relación con socios",
+        publico: "Gremios aliados",
+        impacto: "Referente técnico",
+        reputacion: "Alto"
+    },
+     {
+        area: "Eventos",
+        producto_macro: "Comercial / eventos",
+        producto_especifico: "Minuto a minuto",
+        formato: "Evento",
+        canal: "Evento / actividad presencial",
+        objetivo: "Apoyar objetivos comerciales",
+        publico: "Participantes",
+        impacto: "Relacionamiento",
+        reputacion: "Medio"
+    }
+];
+
+export const INITIAL_IMPACT_LOG_STATE = {
+    date: new Date().toISOString().slice(0, 10),
+    title: '',
+    area: '',
+    producto_macro: '',
+    producto_especifico: '',
+    canal: '',
+    metrics: {} 
+};
+
+// --- MEDIA STAKEHOLDER DIRECTORY (UPDATED) ---
 export const MEDIA_STAKEHOLDER_CATEGORY_OPTIONS = PRESS_LOG_FORMAT_OPTIONS;
 export const MEDIA_SCOPE_OPTIONS = ["National", "International", "Local", "Province"];
 
 export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
-    name: '',
+    name: '', 
+    institution: '', // Added
     email: '',
     phone: '',
     type: MEDIA_STAKEHOLDER_CATEGORY_OPTIONS[0], 
@@ -266,10 +366,10 @@ export const INITIAL_MEDIA_STAKEHOLDER_STATE = {
 
 export const MEDIA_STAKEHOLDER_TABLE_COLUMNS = [
     { labelKey: "stakeholder.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "stakeholder.col.institution", key: "institution", sortable: true, filterable: true, type: 'string' }, // Added
     { labelKey: "stakeholder.col.email", key: "email", sortable: true, filterable: true, type: 'string' },
     { labelKey: "stakeholder.col.phone", key: "phone", sortable: true, filterable: true, type: 'string' },
     { labelKey: "stakeholder.col.type", key: "type", sortable: true, filterable: true, optionsKey: 'type' }, 
-    { labelKey: "stakeholder.col.position", key: "position", sortable: true, filterable: true, optionsKey: 'position' },
     { labelKey: "stakeholder.col.scope", key: "scope", sortable: true, filterable: true, optionsKey: 'scope' },
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
@@ -280,8 +380,7 @@ export const MEDIA_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
     scope: MEDIA_SCOPE_OPTIONS,
 };
 
-
-// TAREA 2: Constantes para la Tabla de Cuotas de Membresía
+// --- FINANCE: FEES & DONATIONS ---
 export const MEMBERSHIP_TYPE_OPTIONS = ["Exporter", "Adherent"];
 
 export const MEMBERSHIP_FEE_TABLE_COLUMNS = [
@@ -297,7 +396,6 @@ export const MEMBERSHIP_FEE_COLUMN_OPTIONS_MAP = {
     membershipType: MEMBERSHIP_TYPE_OPTIONS,
 };
 
-// TAREA 3: Constantes para Donaciones
 export const INITIAL_DONATION_STATE = {
     donor: '',
     purpose: '',
@@ -325,7 +423,7 @@ export const DONATION_COLUMN_OPTIONS_MAP = {
     boolean: ["Yes", "No"],
 };
 
-// TAREA 4: Constantes para Proyectos
+// --- FINANCE: PROJECTS ---
 export const FUNDING_SOURCE_OPTIONS = [
     "Donations", "Public Funds", "International Cooperation", "Self Financed", "Sales", "Other"
 ];
@@ -358,7 +456,7 @@ export const PROJECT_COLUMN_OPTIONS_MAP = {
     fundingSources: FUNDING_SOURCE_OPTIONS,
 };
 
-// TAREA 5: Constantes para Servicios
+// --- FINANCE: SERVICES ---
 export const SERVICE_TYPE_OPTIONS = ["Workshop", "Certification", "Consulting", "Event", "Other"];
 export const SERVICE_AREA_OPTIONS = ["Technical", "Legal", "Commercial", "Sustainability", "Other"];
 
@@ -384,7 +482,7 @@ export const SERVICE_COLUMN_OPTIONS_MAP = {
     area: SERVICE_AREA_OPTIONS,
 };
 
-// TAREA 6: Constantes para Auditorías
+// --- FINANCE: AUDITS ---
 export const INITIAL_AUDIT_STATE = {
     startDate: new Date().toISOString().slice(0, 10),
     endDate: new Date().toISOString().slice(0, 10),
@@ -406,7 +504,7 @@ export const AUDIT_TABLE_COLUMNS = [
 export const AUDIT_COLUMN_OPTIONS_MAP = {
 };
 
-// TAREA 7: Constantes para Proveedores y Relaciones
+// --- FINANCE: PROVIDERS ---
 export const PROVIDER_TYPE_OPTIONS = ["Person", "Company"];
 export const PROVIDER_PRODUCT_SERVICE_OPTIONS = ["Supplies", "Consulting", "Logistics", "Legal", "Technology", "Other"];
 
@@ -443,22 +541,25 @@ export const PROVIDER_COLUMN_OPTIONS_MAP = {
     boolean: ["Yes", "No"],
 };
 
-// --- Constantes para Socios ---
+// --- FINANCE: PARTNERS (UPDATED) ---
 export const PARTNER_AREA_OPTIONS = ["Sostenibilidad", "Comercio", "Legal", "Tecnología", "Otro"];
 
 export const INITIAL_PARTNER_STATE = {
-    name: '',
-    area: PARTNER_AREA_OPTIONS[0],
-    contact_person: '',
-    contact_email: '',
+    name: '', // Organization Name
+    institution: '', 
+    contact_person: '', 
+    contact_email: '', 
+    contact_phone: '', // Added
+    area: 'Sostenibilidad',
     agreement_link: '',
 };
 
 export const PARTNER_TABLE_COLUMNS = [
     { labelKey: "finance.relations.partner.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
-    { labelKey: "finance.relations.partner.col.area", key: "area", sortable: true, filterable: true, optionsKey: 'area', type: 'string' },
     { labelKey: "finance.relations.partner.col.contact_person", key: "contact_person", sortable: true, filterable: true, type: 'string' },
     { labelKey: "finance.relations.partner.col.contact_email", key: "contact_email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.contact_phone", key: "contact_phone", sortable: false, filterable: true, type: 'string' }, // Added
+    { labelKey: "finance.relations.partner.col.area", key: "area", sortable: true, filterable: true, optionsKey: 'area', type: 'string' },
     { labelKey: "finance.relations.partner.col.agreement_link", key: "agreement_link", sortable: false, filterable: false, type: 'string' },
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
@@ -467,7 +568,7 @@ export const PARTNER_COLUMN_OPTIONS_MAP = {
     area: PARTNER_AREA_OPTIONS,
 };
 
-// Columnas para la tabla de Donantes (solo lectura)
+// --- FINANCE: READONLY TABLES ---
 export const DONORS_READONLY_TABLE_COLUMNS = [
     { labelKey: "finance.donations.col.donor", key: "donor", sortable: true, filterable: true, type: 'string' },
     { labelKey: "finance.donations.col.purpose", key: "purpose", sortable: false, filterable: true, type: 'string' },
@@ -475,7 +576,6 @@ export const DONORS_READONLY_TABLE_COLUMNS = [
     { labelKey: "finance.donations.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
 ];
 
-// Columnas para la tabla de Beneficiarios (solo lectura)
 export const BENEFICIARIES_READONLY_TABLE_COLUMNS = [
     { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
     { labelKey: "profile.col.representative", key: "representative", sortable: true, filterable: true, type: 'string' },
@@ -483,7 +583,7 @@ export const BENEFICIARIES_READONLY_TABLE_COLUMNS = [
     { labelKey: "profile.col.farms", key: "farms", sortable: false, filterable: true, type: 'farms_array' },
 ];
 
-// TAREA 10: Constantes para Solicitud de Miembros (ACTUALIZADO)
+// --- MEMBER REQUESTS ---
 export const MEMBER_REQUEST_STATUS_OPTIONS = ["Low", "Medium", "High"];
 export const INITIAL_MEMBER_REQUEST_STATE = {
     company_name: '',
@@ -500,7 +600,7 @@ export const INITIAL_MEMBER_REQUEST_STATE = {
     risk_link: '', 
 };
 
-// TAREA 1: Constantes para Costos (Resumen Financiero)
+// --- COSTS ---
 export const COST_CATEGORIES_ADMIN = [
     "Salarios", "Arriendo", "Servicios Básicos", "Suministros Oficina", "Otro"
 ];
@@ -522,7 +622,6 @@ export const INITIAL_COST_STATE_NON_OP = {
     amount: '',
 };
 
-// Columnas reutilizables para ambas tablas de costos
 export const COST_TABLE_COLUMNS = [
     { labelKey: "finance.col.date", key: "date", sortable: true, filterable: true, type: 'string' },
     { labelKey: "finance.col.category", key: "category", sortable: true, filterable: true, optionsKey: 'category', type: 'string' },
@@ -531,7 +630,6 @@ export const COST_TABLE_COLUMNS = [
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
 
-// Mapas de opciones para los filtros de las tablas de costos
 export const COST_COLUMN_OPTIONS_MAP_ADMIN = {
     category: COST_CATEGORIES_ADMIN,
 };
@@ -539,7 +637,7 @@ export const COST_COLUMN_OPTIONS_MAP_NON_OP = {
     category: COST_CATEGORIES_NON_OP,
 };
 
-// --- Tarea 1 (Eventos) ---
+// --- EVENTS ---
 export const EVENT_TYPE_OPTIONS = [
     "Conference", "Meeting", "Exhibition", "Talks", "Boards"
 ];
@@ -568,7 +666,7 @@ export const INITIAL_EVENT_STATE = {
     minute_link: '', 
 };
 
-// --- Tarea 2 (Directorios) ---
+// --- DIRECTORIES & PUBLIC AFFAIRS (UPDATED) ---
 export const MEMBER_DIRECTORY_COLUMNS = [
     { labelKey: "profile.col.company", key: "company", sortable: true, filterable: true, type: 'string' },
     { labelKey: "profile.col.representative", key: "representative", sortable: true, filterable: true, type: 'string' },
@@ -582,32 +680,35 @@ export const BOARD_DIRECTORY_COLUMNS = [
     { labelKey: "profile.col.email", key: "email", sortable: true, filterable: true, type: 'string' },
     { labelKey: "profile.col.activity", key: "activity", sortable: true, filterable: true, optionsKey: 'activity', type: 'string' },
 ];
+
 export const INITIAL_PUBLIC_STAKEHOLDER_STATE = {
-    name: '',
+    name: '', 
+    institution: '', // Added
     type: 'Public', 
-    ambito: STAKEHOLDER_AMBITO_OPTIONS.National,
-    role: STAKEHOLDER_ROLE_OPTIONS[0],
-    position: STAKEHOLDER_POSITION_OPTIONS[0],
-    contact_person: '',
-    contact_email: '',
-    contact_phone: '',
+    ambito: 'national',
+    role: 'stakeholder.role.other',
+    position: 'stakeholder.position.neutral',
+    email: '', // Standardized contact info
+    phone: '', 
 };
+
 export const PUBLIC_STAKEHOLDER_TABLE_COLUMNS = [
     { labelKey: "stakeholder.col.name", key: "name", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "stakeholder.col.institution", key: "institution", sortable: true, filterable: true, type: 'string' }, // Added
+    { labelKey: "profile.contact_email", key: "email", sortable: true, filterable: true, type: 'string' },
+    { labelKey: "profile.contact_phone", key: "phone", sortable: false, filterable: true, type: 'string' },
     { labelKey: "stakeholder.col.scope", key: "ambito", sortable: true, filterable: true, optionsKey: 'ambito', type: 'string' },
     { labelKey: "stakeholder.col.position", key: "position", sortable: true, filterable: true, optionsKey: 'position' },
-    { labelKey: "stakeholder.col.role", key: "role", sortable: true, filterable: true, optionsKey: 'role', type: 'string' },
-    { labelKey: "profile.contact_name", key: "contact_person", sortable: true, filterable: true, type: 'string' },
-    { labelKey: "profile.contact_email", key: "contact_email", sortable: true, filterable: true, type: 'string' },
-    { labelKey: "profile.contact_phone", key: "contact_phone", sortable: false, filterable: true, type: 'string' },
     { labelKey: "activity.col.actions", key: "actions", sortable: false, filterable: false, type: 'none' },
 ];
+
 export const PUBLIC_STAKEHOLDER_COLUMN_OPTIONS_MAP = {
     ambito: Object.values(STAKEHOLDER_AMBITO_OPTIONS),
     position: STAKEHOLDER_POSITION_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
     role: STAKEHOLDER_ROLE_OPTIONS.map(opt_key => ({ value: opt_key, label: opt_key })),
 };
 
+// --- GOVERNANCE ---
 export const INITIAL_COMMISSION_STATE = {
     name: '',
     scope: '',

@@ -33,7 +33,7 @@ const AdminMainDashboard = ({ onModuleSelect }) => {
     const modules = [
         { 
             id: 'members', 
-            label: t('sidebar.members'), 
+            label: t('sidebar.members'), // Now "Users"
             icon: Users, 
             desc: "Manage user profiles, approvals, and administrative settings.",
             color: "bg-blue-50 text-blue-600"
@@ -61,7 +61,7 @@ const AdminMainDashboard = ({ onModuleSelect }) => {
         },
         { 
             id: 'database', 
-            label: t('sidebar.database'), 
+            label: t('sidebar.members_module'), // Now "Members" (old Database)
             icon: BookUser, 
             desc: "Access directories for members, partners, and stakeholders.",
             color: "bg-emerald-50 text-emerald-600"

@@ -2,12 +2,11 @@ import React from 'react';
 import { useTranslation } from '../context/TranslationContext.jsx'; 
 import { 
     BarChart2, Briefcase, Database, Calendar, Target, Users, Settings, 
-    MessageSquare, Clock, User, List, Megaphone, UserPlus, UserCheck, 
+    MessageSquare, Clock, User, Megaphone, UserPlus, UserCheck, 
     DollarSign, Handshake, Radio, BookUser, Users2, Shield, Rss, 
     ArrowLeft 
 } from 'lucide-react'; 
 
-// --- Components Helper ---
 const SidebarGroup = ({ title }) => (
     <h3 className="px-3 pt-6 pb-2 text-xs font-bold uppercase tracking-wider text-blue-200/60">
         {title}
@@ -32,24 +31,20 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role, currentModule, 
     const { t } = useTranslation(); 
 
     const ALL_VIEWS = [
-        // --- Group: Members ---
+        // --- Group: Users (Old Members) ---
         { id: 'user_profile', labelKey: 'sidebar.user_profile', icon: User, requiredRole: ['director', 'user'], group: 'members' },
         { id: 'user_admin', labelKey: 'sidebar.user_admin', icon: Settings, requiredRole: ['admin'], group: 'members' },
-        { id: 'admin_profiles', labelKey: 'sidebar.admin_profiles', icon: List, requiredRole: ['admin'], group: 'members' },
-        { id: 'new_member_request', labelKey: 'sidebar.new_member_request', icon: UserPlus, requiredRole: ['admin'], group: 'members' },
+        // REMOVED: admin_profiles
         { id: 'member_approvals', labelKey: 'sidebar.member_approvals', icon: UserCheck, requiredRole: ['director'], group: 'members' },
 
-        // --- Group: Public Affairs (Restructured) ---
-        // Data Input
-        { id: 'policy_data', labelKey: 'sidebar.agenda_and_milestones', icon: Database, requiredRole: ['admin'], group: 'public_affairs', section: 'data_input' }, // Renamed
+        // --- Group: Public Affairs ---
+        { id: 'policy_data', labelKey: 'sidebar.agenda_and_milestones', icon: Database, requiredRole: ['admin'], group: 'public_affairs', section: 'data_input' }, 
         { id: 'activity_log', labelKey: 'sidebar.activity_log', icon: Clock, requiredRole: ['admin'], group: 'public_affairs', section: 'data_input' },
-        // Dashboards
         { id: 'resumen', labelKey: 'sidebar.summary', icon: BarChart2, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'public_affairs', section: 'dashboards' }, 
         { id: 'logros', labelKey: 'sidebar.achievements', icon: Briefcase, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'public_affairs', section: 'dashboards' },
         { id: 'objectivos', labelKey: 'sidebar.objectives', icon: Target, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs', section: 'dashboards' },
         { id: 'agenda_view', labelKey: 'sidebar.agenda_view', icon: Calendar, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs', section: 'dashboards' },
         { id: 'stakeholder_map', labelKey: 'sidebar.stakeholder_map', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'public_affairs', section: 'dashboards' },
-        // Moved from Communications
         { id: 'communications_log', labelKey: 'sidebar.communications_log', icon: MessageSquare, requiredRole: ['admin'], group: 'public_affairs', section: 'dashboards' }, 
 
         // --- Group: Events ---
@@ -60,7 +55,9 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role, currentModule, 
         { id: 'media_stakeholder_map', labelKey: 'sidebar.media_stakeholder_map', icon: Radio, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'communications' },
         { id: 'bulletin_board', labelKey: 'sidebar.bulletin_board', icon: Rss, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'communications' },
 
-        // --- Group: Database ---
+        // --- Group: Members (Old Database) ---
+        // MOVED HERE: New Member Request
+        { id: 'new_member_request', labelKey: 'sidebar.new_member_request', icon: UserPlus, requiredRole: ['admin'], group: 'database' },
         { id: 'member_directory', labelKey: 'sidebar.member_directory', icon: BookUser, requiredRole: ['admin', 'director', 'user', 'directorinvitee', 'userinvitee'], group: 'database' },
         { id: 'board_directory', labelKey: 'sidebar.board_directory', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'database' },
         { id: 'public_affairs_directory', labelKey: 'sidebar.public_affairs_directory', icon: Users, requiredRole: ['admin', 'director', 'directorinvitee'], group: 'database' },
@@ -76,37 +73,34 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role, currentModule, 
         { id: 'finance_relations', labelKey: 'sidebar.finance_relations', icon: Handshake, requiredRole: ['admin'], group: 'finance' },
     ];
 
-    // Filter visible items based on role
     let visibleItems = ALL_VIEWS.filter(item => item.requiredRole.includes(role));
     
-    // If an admin is in a specific module, filter items strictly for that module
     if (role === 'admin' && currentModule) {
         visibleItems = visibleItems.filter(item => item.group === currentModule);
     }
     
-    // Define Groups
     let groups = {};
 
-    // Special handling for Public Affairs (Split into Data Input & Dashboards)
     if (role === 'admin' && currentModule === 'public_affairs') {
         groups = {
             data_input: { 
-                title: t('sidebar.data_input') || "Data Input", 
+                title: t('sidebar.data_input'), 
                 items: visibleItems.filter(i => i.section === 'data_input') 
             },
             dashboards: { 
-                title: t('sidebar.dashboards') || "Dashboards", 
+                title: t('sidebar.dashboards'), 
                 items: visibleItems.filter(i => i.section === 'dashboards') 
             }
         };
     } else {
-        // Default grouping logic
         groups = {
+            // Renamed Group Title to "Users"
             members: { title: t('sidebar.members'), items: visibleItems.filter(i => i.group === 'members') },
             public_affairs: { title: t('sidebar.public_affairs'), items: visibleItems.filter(i => i.group === 'public_affairs') },
             events_group: { title: t('sidebar.events_group'), items: visibleItems.filter(i => i.group === 'events_group') }, 
             communications: { title: t('sidebar.communications'), items: visibleItems.filter(i => i.group === 'communications') },
-            database: { title: t('sidebar.database'), items: visibleItems.filter(i => i.group === 'database') }, 
+            // Renamed Group Title to "Members" (using the new key)
+            database: { title: t('sidebar.members_module'), items: visibleItems.filter(i => i.group === 'database') }, 
             governance: { title: t('sidebar.governance'), items: visibleItems.filter(i => i.group === 'governance') },
             finance: { title: t('sidebar.finance'), items: visibleItems.filter(i => i.group === 'finance') },
         };
@@ -116,7 +110,6 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role, currentModule, 
 
     return (
         <nav className="w-64 flex-shrink-0 bg-[#0f172a] border-r border-gray-800 h-screen fixed top-0 left-0 z-30 shadow-2xl flex flex-col">
-            
             <div className="p-4 pt-6 pb-4 bg-[#0f172a]">
                 <div className="flex items-center space-x-2 px-2 mb-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg">
@@ -127,7 +120,6 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role, currentModule, 
                     </span>
                 </div>
                 
-                {/* Back Button for Admin */}
                 {role === 'admin' && currentModule && (
                     <button 
                         onClick={onGoBack}
@@ -148,7 +140,7 @@ const Sidebar = ({ activeView, setActiveView, isDashboard, role, currentModule, 
                                 {group.items.map((item) => (
                                     <SidebarLink
                                         key={item.id}
-                                        label={t(item.labelKey) || (item.labelKey === 'sidebar.agenda_and_milestones' ? 'Agenda & Milestones' : item.labelKey)}
+                                        label={t(item.labelKey)}
                                         icon={item.icon}
                                         isActive={activeView === item.id}
                                         onClick={() => setActiveView(item.id)}

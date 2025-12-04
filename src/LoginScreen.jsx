@@ -23,6 +23,7 @@ const LoginScreen = ({ isReady, db, auth }) => {
             return;
         }
         try {
+            // 1. Create the request record
             const requestRef = ref(db, `${getDbPaths().userRequests}/${uid}`);
             await set(requestRef, {
                 uid: uid,
@@ -31,6 +32,14 @@ const LoginScreen = ({ isReady, db, auth }) => {
                 status: 'pending',
                 timestamp: serverTimestamp(),
             });
+
+            // 2. Create the initial role entry so they appear in User Admin
+            const roleRef = ref(db, `${getDbPaths().userRoles}/${uid}`);
+            await set(roleRef, {
+                role: 'pending',
+                email: email
+            });
+
             setSuccessMessage(t('login.success.register'));
         } catch (e) {
             console.error("Failed to submit role request:", e);
@@ -58,7 +67,6 @@ const LoginScreen = ({ isReady, db, auth }) => {
         } catch (err) {
             console.error("Auth error:", err);
             let errorMessage = t('login.error.unknown');
-            // ... (Error handling logic unchanged) ...
             if (err.code === 'auth/invalid-email') errorMessage = t('login.error.invalid_email');
             else if (err.code === 'auth/user-disabled') errorMessage = t('login.error.user_disabled');
             else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') errorMessage = t('login.error.credentials');
@@ -78,7 +86,6 @@ const LoginScreen = ({ isReady, db, auth }) => {
             
             <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
                 
-                {/* Title now Blue-900 */}
                 <h1 className="text-4xl font-extrabold tracking-tight text-blue-900 md:text-5xl mb-2">
                     UManage
                 </h1>
@@ -111,7 +118,6 @@ const LoginScreen = ({ isReady, db, auth }) => {
                             placeholder="••••••••"
                         />
 
-                        {/* Button now Blue-600 to Blue-700 */}
                         <button
                             type="submit"
                             disabled={isLoading || !isReady}
